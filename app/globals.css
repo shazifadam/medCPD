@@ -2,26 +2,151 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Gradus CPD — design tokens
+ * Two-tier token system per the Design System doc (Park UI discipline):
+ *   Tier 1 — primitive 12-step scales (no meaning)
+ *   Tier 2 — semantic tokens (the ONLY names components may use)
+ * Values synced from the Figma variable collections (CPD-System file,
+ * Primitives 8:2 / Color 11:2), Light mode. Brand accent #065BA1 = accent-9.
+ * Components never read Tier 1 or raw values — re-theming edits Tier 2 only.
+ */
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* ── Tier 1 — primitives ─────────────────────────────── */
+    /* neutral scale */
+    --gray-1: 0 0% 98.8%;
+    --gray-2: 0 0% 96.9%;
+    --gray-3: 0 0% 94.1%;
+    --gray-4: 0 0% 91%;
+    --gray-5: 0 0% 87.8%;
+    --gray-6: 0 0% 85.1%;
+    --gray-7: 0 0% 80%;
+    --gray-8: 0 0% 70.2%;
+    --gray-9: 0 0% 54.9%;
+    --gray-10: 0 0% 45.1%;
+    --gray-11: 0 0% 34.9%;
+    --gray-12: 0 0% 12.2%;
+
+    /* brand accent scale — #065BA1 anchored at step 9 */
+    --accent-1: 210 100% 99.2%;
+    --accent-2: 207.3 100% 97.8%;
+    --accent-3: 210 85.7% 94.5%;
+    --accent-4: 210 80% 90.2%;
+    --accent-5: 209 75.6% 83.9%;
+    --accent-6: 209 74% 75.9%;
+    --accent-7: 208.2 74.4% 64.7%;
+    --accent-8: 207.1 85.2% 55.1%;
+    --accent-9: 207.1 92.8% 32.7%;
+    --accent-10: 207 93.2% 29%;
+    --accent-11: 206.7 89.1% 36.1%;
+    --accent-12: 211.2 68.4% 14.9%;
+
+    /* functional steps */
+    --green-3: 161.7 59% 92.4%;
+    --green-6: 164 55.3% 66.7%;
+    --green-9: 168.1 92.1% 39.6%;
+    --green-11: 168.1 90.6% 25.1%;
+    --amber-3: 38 89.1% 89.2%;
+    --amber-9: 38 92.2% 50%;
+    /* amber-11 darkened from Figma #ae5f12 → #9d5610: original fails WCAG AA
+       on amber-3 (3.99:1 < 4.5:1 for 12px pending pills). Sync back to Figma. */
+    --amber-11: 29.8 81.5% 33.9%;
+    --red-3: 0 72.4% 94.3%;
+    --red-9: 0 72% 51%;
+    --red-11: 0 69.8% 35.1%;
+    --blue-3: 214.6 81.3% 93.7%;
+    --blue-9: 215 90.2% 52%;
+    --blue-11: 217.5 72.1% 43.5%;
+    --white: 0 0% 100%;
+
+    /* ── Tier 2 — semantic tokens ────────────────────────── */
+    --background: var(--gray-1);
+    --foreground: var(--gray-12);
+
+    --card: var(--gray-1);
+    --card-foreground: var(--gray-12);
+    --popover: var(--gray-1);
+    --popover-foreground: var(--gray-12);
+
+    --primary: var(--accent-9);
+    --primary-hover: var(--accent-10);
+    --primary-foreground: var(--white);
+
+    --secondary: var(--gray-3);
+    --secondary-foreground: var(--gray-12);
+
+    --muted: var(--gray-3);
+    --muted-foreground: var(--gray-11);
+
+    --accent: var(--accent-3);
+    --accent-foreground: var(--accent-9);
+
+    --destructive: var(--red-9);
+    --destructive-foreground: var(--white);
+
+    --success: var(--green-9);
+    --success-foreground: var(--white);
+    --success-subtle: var(--green-3);
+    --success-subtle-foreground: var(--green-11);
+    --success-border: var(--green-6);
+
+    --border: var(--gray-6);
+    --input: var(--gray-7);
+    --ring: var(--accent-8);
+
+    --sidebar: var(--gray-2);
+    --sidebar-foreground: var(--gray-12);
+    --sidebar-border: var(--gray-6);
+    --sidebar-accent: var(--accent-3);
+    --sidebar-accent-foreground: var(--accent-11);
+    --sidebar-ring: var(--accent-8);
+
+    /* CPD status tokens — entries / events / certificates */
+    --status-draft: var(--gray-11);
+    --status-draft-bg: var(--gray-3);
+    --status-draft-border: var(--gray-6);
+    --status-pending: var(--amber-11);
+    --status-pending-bg: var(--amber-3);
+    --status-pending-border: var(--amber-9);
+    --status-approved: var(--green-11);
+    --status-approved-bg: var(--green-3);
+    --status-approved-border: var(--green-6);
+    --status-rejected: var(--red-11);
+    --status-rejected-bg: var(--red-3);
+    --status-rejected-border: var(--red-9);
+    --status-under-review: var(--blue-11);
+    --status-under-review-bg: var(--blue-3);
+    --status-under-review-border: var(--blue-9);
+    --status-revoked: var(--red-11);
+    --status-revoked-bg: 0 87.5% 90.6%; /* raw — no primitive match, per Figma */
+    --status-revoked-border: var(--red-9);
+
+    /* radius — drives rounded-lg/md/sm (8 / 6 / 4 px) */
+    --radius: 0.5rem;
+
+    /* layout */
+    --navbar-height: 72px;
+    --sidebar-width: 248px;
+  }
+
+  /*
+   * Dark mode — the Figma Primitives collection is dual-mode, but v1 ships
+   * light-only (every screen designed in Light). Sync dark primitive values
+   * from Figma (Primitives 8:2, mode Dark 8:1) before enabling.
+   */
+  .dark {
+    --background: var(--gray-12);
+    --foreground: var(--gray-1);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
