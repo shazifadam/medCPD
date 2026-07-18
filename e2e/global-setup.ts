@@ -21,6 +21,7 @@ const PRACTITIONER_EMAIL = "e2e-practitioner@cpd-test.local";
 // e2e-practitioner pristine for the DB4/EN3 empty-state assertions.
 const ENTRIES_EMAIL = "e2e-entries@cpd-test.local"; // log-activity.spec
 const ENTRIES_VIEW_EMAIL = "e2e-entries-view@cpd-test.local"; // entries.spec
+const EVENTS_EMAIL = "e2e-events@cpd-test.local"; // events.spec
 const ADMIN_EMAIL = "e2e-admin@cpd-test.local";
 const PASSWORD = "E2eTest!Passw0rd";
 
@@ -73,6 +74,7 @@ export default async function globalSetup(config: FullConfig) {
   await ensureUser(admin, ADMIN_EMAIL, "E2E Admin", "PMR-E2E-02");
   await ensureUser(admin, ENTRIES_EMAIL, "E2E Entries", "PMR-E2E-03");
   await ensureUser(admin, ENTRIES_VIEW_EMAIL, "E2E Entries View", "PMR-E2E-04");
+  await ensureUser(admin, EVENTS_EMAIL, "E2E Events", "PMR-E2E-05");
 
   // 2. Verify profiles + grant roles (idempotent, service connection).
   const sql = postgres(env.DATABASE_URL, { prepare: false, ssl: "require" });
@@ -80,13 +82,14 @@ export default async function globalSetup(config: FullConfig) {
     await sql`
       update profiles
       set registration_state = 'verified', verified_at = now()
-      where email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL})
+      where email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL}, ${EVENTS_EMAIL})
         and registration_state <> 'verified'
     `;
     for (const [email, role] of [
       [PRACTITIONER_EMAIL, "practitioner"],
       [ENTRIES_EMAIL, "practitioner"],
       [ENTRIES_VIEW_EMAIL, "practitioner"],
+      [EVENTS_EMAIL, "practitioner"],
       [ADMIN_EMAIL, "practitioner"],
       [ADMIN_EMAIL, "mma_admin"],
     ] as const) {
@@ -115,6 +118,7 @@ export default async function globalSetup(config: FullConfig) {
     [PRACTITIONER_EMAIL, "practitioner.json", /\/dashboard/],
     [ENTRIES_EMAIL, "entries.json", /\/dashboard/],
     [ENTRIES_VIEW_EMAIL, "entries-view.json", /\/dashboard/],
+    [EVENTS_EMAIL, "events.json", /\/dashboard/],
     [ADMIN_EMAIL, "admin.json", /\/admin/],
   ] as const) {
     const page = await browser.newPage({ baseURL });

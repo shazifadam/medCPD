@@ -1,8 +1,25 @@
 # Current State
 
-**Snapshot date:** 2026-07-18 (P3 ✅ COMPLETE — LA + EN both landed, e2e 40/40, unit 16/16 — P4 events next)
+**Snapshot date:** 2026-07-18 late (P4 ✅ COMPLETE — events/attendance/RA, e2e 49/49, unit 16/16, pushed to GitHub — P5 committee next)
 
-## ▶ RESUME HERE — 2026-07-18 evening (P3 done; next: P4 events)
+## ▶ RESUME HERE — 2026-07-18 late (P4 done; next: P5 committee)
+
+**GitHub:** `https://github.com/shazifadam/medCPD` (remote `origin`, branch `main`) — P0–P3 pushed as the first commit; P4 commit follows this snapshot. Dev-log docs mirror into `CPD-Dev/docs/dev-log/` every completion (standing user directive, see memory `cpd-completion-logging`).
+
+**P4 landed (2026-07-18):**
+- ✅ Migrations `20260718100000_events.sql` (4 enums + events, event_sessions, event_organizers, event_accreditations, event_credit_allocations, event_registrations, event_attendances + `event_credit_for_role()` + **the 4 deferred event FKs on cpd_entries**) and `…100100_events_rls.sql` (41 policies, faithful; sessions/organizers/allocations trailing policies pattern-completed). Pushed + verified. event_reviews (Part 4d) deferred to P5.
+- ✅ **EV1–EV5** `/events` (search + All/Registered/Past tabs + 2-col cards) and `/events/[id]` (About, Agenda from event_sessions, credit callout, Registration panel, EV4 confirm dialog, EV5 registered state + cancel). Deviation: Category/Date/Credits filter selects deferred (search+tabs cover v1); "Event by" = creator's institution, falls back to "Maldives Medical Association" (events has no host-org column by design).
+- ✅ **AT1–AT5** `/events/my` (Upcoming/Past/Pending-verification tabs, date-tile rows, state pills) + check-in dialog (QR panel is visual-only; attestation checkbox drives it). **Check-in decision:** registered + attested → attendance VERIFIED (self-attested) + **pending cpd_entry** priced via event_credit_for_role in ONE transaction (AT3, "+N credits awarded" = pending until MMA review, matching EV3 copy); walk-in + prereg-required → pending attendance, no entry (AT5); walk-in otherwise → pending attendance (AT4). AT5/AT4 walk-in outcomes have **no v1 UI entry point** (future QR deep-link) — server logic ready.
+- ✅ **RA1–RA4** `/admin/approvals` (Pending/Approved/Rejected/All chips + queue) + `/admin/approvals/[id]` (details, Decision card, Application meta) + approve dialog (grants practitioner role, fixed role/cycle in v1) + reject dialog (reason select + details → `profiles.rejection_reason`). Deviation: designed IC/passport, qualification, practice + verification-documents sections not collected at signup (P1) — render from what exists.
+- ✅ Dashboard "Upcoming events" panel now live (top 3, Register/Check-in CTA).
+- ✅ e2e: `events.spec.ts` (5: browse+search, EV3→EV5 register, **AT check-in → DB-asserted verified attendance + pending entry w/ provenance**, cancel-registration, axe) + `approvals.spec.ts` (4: queue, approve→role granted DB-assert, reject→reason DB-assert, axe). **Suite 49/49**, unit 16/16. New e2e users: e2e-events (events.json), e2e-applicant-a/b (seeded in-spec).
+- **Gotchas this session:** CTE inserts aren't visible via the base table in the same statement (join the CTE, not the table — broke the event seed's allocations); Radix dialog clicks can land pre-hydration under full-suite load → wrap open-click in `expect(...).toPass()`; `rm -rf .next` forces next/font/google re-fetch — if fonts.gstatic.com DNS fails the dev server throws `useContext` null Server Errors until it recovers (consider self-hosting JetBrains Mono in P8); playwright now `workers: 4`, expect timeout 10s, test timeout 60s.
+
+**Next: P5 committee** — ER entry review queue (approve/reject pending entries — completes the credit loop incl. event-derived entries), event_reviews table (Part 4d) + EV submission review, IR institution review, AI audit sampling. Then P6 admin rest → P7 certificates → P8 polish (incl. self-host fonts, AT walk-in QR path).
+
+---
+
+## (superseded) P3 snapshot — 2026-07-18
 
 **P3 EN1–EN7 landed (same day, after the LA block below):**
 - ✅ `/my-cpd` (EN1–EN3): `lib/entries.ts` (getMyCpdData / getRecentEntries / getEntryDetail; **counted totals come from aggregateCycle via `DashboardData.perCategory`**, never raw sums), `components/features/entries/{entries-card,status-badge,withdraw-button}.tsx`. Four category cards render (design frames show 3 — deliberate; matrix has 4). "Floor met" note uses **text-status-approved** (text-success #08c29d fails AA at 12px — axe caught it).

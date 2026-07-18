@@ -47,7 +47,9 @@ test.describe("DB4 — dashboard, empty (new practitioner)", () => {
 
     // Empty panels
     await expect(page.getByText("No CPD entries yet")).toBeVisible();
-    await expect(page.getByText("No registered events yet")).toBeVisible();
+    // Upcoming events panel exists; its rows depend on globally seeded
+    // events (events.spec), so only the heading is asserted here.
+    await expect(page.getByText("Upcoming events")).toBeVisible();
 
     // No warning/success callouts in the empty state
     await expect(page.getByText("Category 1 below floor")).toHaveCount(0);

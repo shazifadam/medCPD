@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-07-18 (P3 COMPLETE — LA + EN flows, e2e 40/40; P4 events next, see [[Current State]])
+**Last updated:** 2026-07-18 late (P4 COMPLETE — events/attendance/approvals, e2e 49/49; pushed to github.com/shazifadam/medCPD; P5 committee next, see [[Current State]])
 
 ---
 
@@ -88,11 +88,12 @@
 
 ---
 
-## P4 — Events + Attendance ⬜
-- [ ] Migrations: `events`, `registrations`, `attendance`
-- [ ] EV1–EV5 — Event discovery / browse / detail / register
-- [ ] AT1–AT5 — My events, attendance, result states
-- [ ] RA — Registration/attendance approvals
+## P4 — Events + Attendance ✅ (2026-07-18)
+- [x] Migrations: events + sessions + organizers + accreditations + credit allocations + registrations + attendances + `event_credit_for_role()` + the 4 deferred event FKs on cpd_entries (41 RLS policies). event_reviews (4d) → P5.
+- [x] EV1–EV5 — /events browse (search + tabs + cards) + /events/[id] detail (agenda, credit callout, registration panel, confirm dialog, registered/cancel states)
+- [x] AT1–AT5 — /events/my (tabs + state pills) + check-in dialog → verified attendance + pending cpd_entry in one tx (AT3); AT4/AT5 walk-in outcomes server-ready (UI entry = future QR deep-link)
+- [x] RA1–RA4 — /admin/approvals queue + applicant review + approve (grants practitioner role) / reject (reason stored) dialogs
+- [x] e2e: events.spec (5) + approvals.spec (4), suite 49/49
 - [ ] e2e: browse → register → attendance
 
 ---
@@ -114,7 +115,7 @@
 - [ ] FM — Framework management (categories, credit rules)
 - [ ] UM — Users management (approve, roles, suspend)
 - [ ] AL — Audit log viewer
-- [ ] RA approvals surfaced in admin (if not in P4)
+- [x] RA approvals surfaced in admin (landed in P4)
 
 ---
 

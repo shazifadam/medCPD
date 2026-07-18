@@ -7,6 +7,7 @@ import { getIdentity } from "@/lib/auth/identity";
 import { getDashboardData } from "@/lib/dashboard";
 import { getActivityTypeOptions } from "@/lib/activities";
 import { getRecentEntries } from "@/lib/entries";
+import { listEvents } from "@/lib/events";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { LogActivityDialog } from "@/components/features/log-activity/log-activity-dialog";
@@ -37,11 +38,13 @@ export default async function DashboardPage() {
     left join specialties s on s.id = ps.specialty_id
     where p.id = ${identity.user.id}
   `;
-  const [data, activityTypes, recent] = await Promise.all([
+  const [data, activityTypes, recent, allEvents] = await Promise.all([
     getDashboardData(identity.user.id),
     getActivityTypeOptions(),
     getRecentEntries(identity.user.id),
+    listEvents(identity.user.id),
   ]);
+  const upcoming = allEvents.filter((e) => !e.isPast).slice(0, 3);
 
   const identityLine = [
     profile?.full_name,
@@ -159,12 +162,60 @@ export default async function DashboardPage() {
               Browse <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
-          {/* Registered/upcoming events land in P4 */}
-          <div className="flex flex-1 items-center justify-center p-10">
-            <p className="text-sm text-muted-foreground">
-              No registered events yet
-            </p>
-          </div>
+          {upcoming.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-10">
+              <p className="text-sm text-muted-foreground">
+                No upcoming events
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {upcoming.map((e) => (
+                <div
+                  key={e.id}
+                  className="flex flex-col gap-2.5 border-b border-border px-5 py-4 last:border-0"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/events/${e.id}`}
+                      className="truncate text-sm text-foreground hover:text-primary"
+                    >
+                      {e.title}
+                    </Link>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-status-approved-border bg-status-approved-bg px-[9px] py-[3px] text-xs text-status-approved">
+                      <span
+                        className="h-1.5 w-1.5 rounded-full bg-status-approved-border"
+                        aria-hidden
+                      />
+                      Accredited
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {[e.hostName, format(parseISO(e.startsAt), "d MMM yy")]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-foreground">
+                      {[
+                        e.credits != null
+                          ? `${e.credits.toFixed(1)} credits`
+                          : null,
+                        e.categoryLabel,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/events/${e.id}`}>
+                        {e.myRegistrationId ? "Check-in" : "Register"}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
