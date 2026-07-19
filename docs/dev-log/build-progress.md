@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-07-18 late (P4 COMPLETE — events/attendance/approvals, e2e 49/49; pushed to github.com/shazifadam/medCPD; P5 committee next, see [[Current State]])
+**Last updated:** 2026-07-19 (P5 COMPLETE — committee entry/event reviews + revocation, e2e 59/59; P6 admin next, see [[Current State]])
 
 ---
 
@@ -98,12 +98,12 @@
 
 ---
 
-## P5 — Committee ⬜
-- [ ] Committee role gating + committee portal nav
-- [ ] ER1–ER6 — Event review + approve/reject dialogs
-- [ ] IR1–IR4 — Entry review
-- [ ] AI1–AI4 — Audit & integrity (incl. destructive revoke dialogs)
-- [ ] Review actions write audit-log rows
+## P5 — Committee ✅ (2026-07-19)
+- [x] Committee role gating (/committee layout: cpd_committee or mma_admin) + nav per design (3 items, no Overview; committee home → /committee/entries)
+- [x] ER1–ER6 — event review queue/detail + approve-&-allocate (accreditation + allocation + review row, one tx) / request-revisions / reject dialogs; event_reviews migration (Part 4d)
+- [x] IR1–IR4 — entry review queue/detail + approve-as-claimed / adjust-&-approve / reject — closes the credit loop
+- [x] AI2/AI3 — accreditation history + revoke (withdraws claimed credits). AI1 audit-log search → P6 (needs audit_log); AI4 certificate revoke → P7
+- [ ] Review actions write audit-log rows — deferred to P6 with the audit_log table (event_reviews already IS the ER trail)
 
 ---
 

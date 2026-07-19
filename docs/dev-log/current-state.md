@@ -1,8 +1,23 @@
 # Current State
 
-**Snapshot date:** 2026-07-18 late (P4 ✅ COMPLETE — events/attendance/RA, e2e 49/49, unit 16/16, pushed to GitHub — P5 committee next)
+**Snapshot date:** 2026-07-19 (P5 ✅ COMPLETE — committee reviews, e2e 59/59, unit 16/16, pushed — P6 admin next)
 
-## ▶ RESUME HERE — 2026-07-18 late (P4 done; next: P5 committee)
+## ▶ RESUME HERE — 2026-07-19 (P5 done; next: P6 admin)
+
+**P5 landed (2026-07-19):**
+- ✅ Migration `20260719090000_event_reviews.sql` (Part 4d: event_review_action enum + append-only event_reviews + RLS) pushed + verified.
+- ✅ **IR1–IR4** `/committee/entries` + `[id]`: queue (pill tabs Pending/Approved/Rejected/All), detail (entry details, evidence downloads, practitioner card w/ cycle totals), decisions = **Approve as claimed / Adjust & approve (credits + category + reason, `calc_inputs.committee_adjusted_credits`) / Reject (reason select + details)**. This CLOSES the credit loop — pending entries (self-reported AND event-derived) now become approved/rejected.
+- ✅ **ER1–ER6** `/committee/events` + `[id]`: queue (Pending/Revisions/Approved/All; revisions = status rejected + last review action requested_revisions per 4d), detail (overview/agenda/requested accreditation from rate-book default), decisions in ONE tx per the 4d atomicity contract: **Approve & allocate** (event→approved + accreditation `MMA-CPD-<yyyy>-<seq>` + allocation + review row), **Request revisions**, **Reject**.
+- ✅ **AI2/AI3** `/committee/audit`: accreditation history + revoke dialog — revocation flips the accreditation AND rejects+zeroes every entry that rode on it (design copy "credits withdrawn"), one tx. Deviations: per-organizer drill-down → P6 (needs organizations), AI1 audit-log search → P6 (needs Part 6 audit_log), AI4 revoke certificate → P7.
+- ✅ Committee shell: `/committee/*` layout guard (cpd_committee or mma_admin), **nav Overview item removed** (design has 3 items), `homePathForRoles` committee → `/committee/entries`.
+- ✅ e2e `committee.spec.ts` 10 tests (IR approve/adjust/reject, ER approve/revise/reject, AI revoke — all DB-asserted — + practitioner-blocked negative + axe). 6th e2e user **e2e-committee@cpd-test.local** (committee.json). **Suite 59/59, unit 16/16.**
+- 🗒️ Gotcha: postgres-js param inside `jsonb_build_object` (and similar fn args) needs an explicit `::numeric` cast — "could not determine data type of parameter".
+
+**Next: P6 admin** — audit_log table (Part 6) + OD1 attention/activity panels, EM manage events (admin creates/submits events — feeds the ER queue for real), OG organizations, FM framework management, UM users, AL audit log screen. Then P7 certificates → P8 polish.
+
+---
+
+## (superseded) P4 snapshot — 2026-07-18 late
 
 **GitHub:** `https://github.com/shazifadam/medCPD` (remote `origin`, branch `main`) — P0–P3 pushed as the first commit; P4 commit follows this snapshot. Dev-log docs mirror into `CPD-Dev/docs/dev-log/` every completion (standing user directive, see memory `cpd-completion-logging`).
 

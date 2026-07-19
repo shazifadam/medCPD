@@ -22,6 +22,7 @@ const PRACTITIONER_EMAIL = "e2e-practitioner@cpd-test.local";
 const ENTRIES_EMAIL = "e2e-entries@cpd-test.local"; // log-activity.spec
 const ENTRIES_VIEW_EMAIL = "e2e-entries-view@cpd-test.local"; // entries.spec
 const EVENTS_EMAIL = "e2e-events@cpd-test.local"; // events.spec
+const COMMITTEE_EMAIL = "e2e-committee@cpd-test.local"; // committee.spec
 const ADMIN_EMAIL = "e2e-admin@cpd-test.local";
 const PASSWORD = "E2eTest!Passw0rd";
 
@@ -75,6 +76,7 @@ export default async function globalSetup(config: FullConfig) {
   await ensureUser(admin, ENTRIES_EMAIL, "E2E Entries", "PMR-E2E-03");
   await ensureUser(admin, ENTRIES_VIEW_EMAIL, "E2E Entries View", "PMR-E2E-04");
   await ensureUser(admin, EVENTS_EMAIL, "E2E Events", "PMR-E2E-05");
+  await ensureUser(admin, COMMITTEE_EMAIL, "E2E Committee", "PMR-E2E-06");
 
   // 2. Verify profiles + grant roles (idempotent, service connection).
   const sql = postgres(env.DATABASE_URL, { prepare: false, ssl: "require" });
@@ -82,7 +84,7 @@ export default async function globalSetup(config: FullConfig) {
     await sql`
       update profiles
       set registration_state = 'verified', verified_at = now()
-      where email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL}, ${EVENTS_EMAIL})
+      where email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL}, ${EVENTS_EMAIL}, ${COMMITTEE_EMAIL})
         and registration_state <> 'verified'
     `;
     for (const [email, role] of [
@@ -90,6 +92,8 @@ export default async function globalSetup(config: FullConfig) {
       [ENTRIES_EMAIL, "practitioner"],
       [ENTRIES_VIEW_EMAIL, "practitioner"],
       [EVENTS_EMAIL, "practitioner"],
+      [COMMITTEE_EMAIL, "practitioner"],
+      [COMMITTEE_EMAIL, "cpd_committee"],
       [ADMIN_EMAIL, "practitioner"],
       [ADMIN_EMAIL, "mma_admin"],
     ] as const) {
@@ -119,6 +123,7 @@ export default async function globalSetup(config: FullConfig) {
     [ENTRIES_EMAIL, "entries.json", /\/dashboard/],
     [ENTRIES_VIEW_EMAIL, "entries-view.json", /\/dashboard/],
     [EVENTS_EMAIL, "events.json", /\/dashboard/],
+    [COMMITTEE_EMAIL, "committee.json", /\/committee\/entries/],
     [ADMIN_EMAIL, "admin.json", /\/admin/],
   ] as const) {
     const page = await browser.newPage({ baseURL });

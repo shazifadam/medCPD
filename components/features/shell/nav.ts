@@ -50,8 +50,8 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: "Audit log", href: "/admin/audit-log", icon: ShieldCheck },
 ];
 
+// Matches the designed committee sidebar exactly — no Overview item.
 const COMMITTEE_ITEMS: NavItem[] = [
-  { label: "Overview", href: "/committee", icon: LayoutDashboard },
   { label: "Event reviews", href: "/committee/events", icon: ClipboardList },
   { label: "Entry reviews", href: "/committee/entries", icon: Award },
   {

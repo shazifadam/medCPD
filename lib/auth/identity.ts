@@ -73,6 +73,7 @@ export function hasRole(identity: Identity | null, role: Role): boolean {
 /** Highest-privilege landing area for a set of roles (post-login redirect). */
 export function homePathForRoles(roles: Role[]): string {
   if (roles.includes("mma_admin")) return "/admin";
-  if (roles.includes("cpd_committee")) return "/committee";
+  // The designed committee sidebar has no Overview — land on the entry queue.
+  if (roles.includes("cpd_committee")) return "/committee/entries";
   return "/dashboard";
 }
