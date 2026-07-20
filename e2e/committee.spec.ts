@@ -94,8 +94,12 @@ test("IR2 — approve as claimed stamps the review metadata", async ({
     .click();
   await expect(page.getByText("Entry details")).toBeVisible();
   await expect(page.getByText("Review decision")).toBeVisible();
-  await page.getByRole("button", { name: "Approve as claimed" }).click();
-  await expect(page.getByText("already been approved")).toBeVisible();
+  await expect(async () => {
+    await page.getByRole("button", { name: "Approve as claimed" }).click();
+    await expect(page.getByText("already been approved")).toBeVisible({
+      timeout: 3000,
+    });
+  }).toPass();
 
   const sql = connectDb();
   try {

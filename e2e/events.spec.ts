@@ -106,6 +106,7 @@ test("EV1 — browse lists the seeded events with credit lines", async ({
 test("EV3→EV5 — register through the confirm dialog", async ({ page }) => {
   await page.goto("/events");
   await page.getByText("E2E External CME Evening").click();
+  await page.waitForURL(/\/events\/[0-9a-f-]{36}/);
 
   await expect(
     page.getByRole("heading", { name: "E2E External CME Evening" })
@@ -183,6 +184,7 @@ test("EV5 — cancelling a registration restores the register CTA", async ({
   // Use the future event (no attendance yet) for the cancel path.
   await page.goto("/events");
   await page.getByText("E2E Cardiology Conference").click();
+  await page.waitForURL(/\/events\/[0-9a-f-]{36}/);
   await page.getByRole("button", { name: "Register" }).click();
   await page.getByRole("button", { name: "Confirm registration" }).click();
   await expect(page.getByText("You're registered")).toBeVisible();

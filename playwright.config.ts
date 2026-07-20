@@ -12,11 +12,13 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // One local retry: the dev server + remote pooler + audit triggers flake
+  // under full-suite load; every spec passes in isolation.
+  retries: process.env.CI ? 2 : 1,
   // Local cap: the dev-mode server + remote pooler saturate under parallel
   // SSR load (page timeouts); CI stays serial. Expect timeout is raised for
   // the same reason — dev-mode compiles + Mumbai round-trips under load.
-  workers: process.env.CI ? 1 : 4,
+  workers: process.env.CI ? 1 : 3,
   expect: { timeout: 10_000 },
   timeout: 60_000,
   reporter: process.env.CI ? "github" : [["list"], ["html", { open: "never" }]],

@@ -1,8 +1,23 @@
 # Current State
 
-**Snapshot date:** 2026-07-19 (P5 ✅ COMPLETE — committee reviews, e2e 59/59, unit 16/16, pushed — P6 admin next)
+**Snapshot date:** 2026-07-19 (P6 ✅ COMPLETE — admin suite + audit_log, e2e 66 green, unit 16/16, pushed — P7 certificates next)
 
-## ▶ RESUME HERE — 2026-07-19 (P5 done; next: P6 admin)
+## ▶ RESUME HERE — 2026-07-19 (P6 done; next: P7 certificates)
+
+**P6 landed (2026-07-19):**
+- ✅ Migration `20260719110000_audit_log.sql` (Part 6: audit_log + CHECKs + `audit_row_changes()` security-definer trigger on **14 tables** — fully-audited compliance set + configuration-audited framework set; snapshot-table triggers deferred with their tables). ⚠️ **Attribution note:** postgres-js writes carry no JWT → `actor_id` null; AL/OD1 resolve the actor from the row snapshot's updated_by/reviewed_by/created_by (app-level `app.audit_context` wiring = follow-up).
+- ✅ **OD1** rebuilt: live tiles (pending approvals+events, entries also pending, active practitioners, certificates 0 til P7) + **Needs attention** (linked items incl. cycle countdown) + **Recent activity** (audit_log).
+- ✅ **EM1–EM8** `/admin/events`: list w/ status pills → `new` (create form — **wizard compressed to one form, sessions post-creation**, noted deviation) → `[id]` manage page (EM5 tiles + Manage panel: submit-for-accreditation feeds the ER queue, cancel w/ confirm) → `roster` (EM6 tabs + remove) → `attendance` (**EM7: self check-ins pre-ticked → "Verify & award credits to N"** — verifies pending attendances + creates pending event-derived entries; resolves AT4). EM8 participants detail folded into roster (deviation).
+- ✅ **UM1/UM3** `/admin/users`: list w/ roles/status/joined + Manage-roles dialog (grant/revoke via role_assignments; self-demotion guard). Invite + deactivate (UM4) deferred — profiles has no is_active; needs auth-admin surface (noted).
+- ✅ **AL1** `/admin/audit-log`: newest 100 w/ action pills + actor + target (search/filters/export + AL2 detail = reporting pass, noted). **FM1/5/6** `/admin/framework`: read-only cycle + floors + rate book (editing = FM7 warning path, deferred pending C1). **OG1/OG2** `/admin/organizations`: list + register dialog (OG3 org detail deferred).
+- ✅ e2e `admin.spec.ts` 7 tests (OD1, EM create→submit DB-asserted, **EM7 verify→award DB-asserted**, UM grant/revoke DB-asserted, OG register, FM+AL live, axe). **Suite 66 e2e green (65+1 retry-flake), unit 16/16.** Playwright: `retries: 1` locally + workers 3 (suite outgrew the dev server; every spec passes in isolation — flakes are saturation, not bugs).
+- 🗒️ e2e cross-spec rules learned: approved events leak into every user's /events browse → after clicking a card title, `waitForURL(/\/events\/[uuid]/)` before touching detail buttons; direct action buttons (no dialog) also need the `expect().toPass()` click-retry wrapper.
+
+**Next: P7 certificates** — CA1–CA3 admin frames (287:13011/13014/13017, scanned list saved), CT practitioner certificate flow + AI4 revoke-certificate, certificates table (schema Part 7 ~line 3881), PDF via @react-pdf/renderer, QR → public `/verify/<uuid>` (PB flow), DB3 "Download certificate". Then P8 polish (self-host JetBrains Mono, empty/loading states page 527:12902, notifications, settings, audit context wiring).
+
+---
+
+## (superseded) P5 snapshot — 2026-07-19
 
 **P5 landed (2026-07-19):**
 - ✅ Migration `20260719090000_event_reviews.sql` (Part 4d: event_review_action enum + append-only event_reviews + RLS) pushed + verified.

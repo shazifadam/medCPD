@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-07-19 (P5 COMPLETE — committee entry/event reviews + revocation, e2e 59/59; P6 admin next, see [[Current State]])
+**Last updated:** 2026-07-19 (P6 COMPLETE — admin suite + audit_log, e2e 66 green; P7 certificates next, see [[Current State]])
 
 ---
 
@@ -107,15 +107,12 @@
 
 ---
 
-## P6 — Super Admin ⬜
-- [ ] Admin role gating + admin portal nav
-- [ ] OD — Overview dashboard
-- [ ] OG — Organizations CRUD
-- [ ] EM — Events manage (create wizard + roster/attendance/participants)
-- [ ] FM — Framework management (categories, credit rules)
-- [ ] UM — Users management (approve, roles, suspend)
-- [ ] AL — Audit log viewer
-- [x] RA approvals surfaced in admin (landed in P4)
+## P6 — Admin ✅ (2026-07-19)
+- [x] audit_log (Part 6) + audit_row_changes() trigger on 14 tables (actor via row snapshot fallback; app.audit_context wiring = follow-up)
+- [x] OD1 — live tiles + needs-attention + recent-activity panels
+- [x] EM1–EM8 — /admin/events list, create (wizard compressed), manage, submit-for-accreditation, roster, verify-attendance→award (resolves AT4)
+- [x] UM1/UM3 — users list + role grant/revoke (invite/deactivate deferred: no is_active on profiles)
+- [x] AL1 — audit log screen (filters/export deferred); FM read-only framework + rate book; OG list + register
 
 ---
 
