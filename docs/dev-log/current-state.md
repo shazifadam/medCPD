@@ -13,7 +13,29 @@
 - ✅ e2e `admin.spec.ts` 7 tests (OD1, EM create→submit DB-asserted, **EM7 verify→award DB-asserted**, UM grant/revoke DB-asserted, OG register, FM+AL live, axe). **Suite 66 e2e green (65+1 retry-flake), unit 16/16.** Playwright: `retries: 1` locally + workers 3 (suite outgrew the dev server; every spec passes in isolation — flakes are saturation, not bugs).
 - 🗒️ e2e cross-spec rules learned: approved events leak into every user's /events browse → after clicking a card title, `waitForURL(/\/events\/[uuid]/)` before touching detail buttons; direct action buttons (no dialog) also need the `expect().toPass()` click-retry wrapper.
 
-**Next: P7 certificates** — CA1–CA3 admin frames (287:13011/13014/13017, scanned list saved), CT practitioner certificate flow + AI4 revoke-certificate, certificates table (schema Part 7 ~line 3881), PDF via @react-pdf/renderer, QR → public `/verify/<uuid>` (PB flow), DB3 "Download certificate". Then P8 polish (self-host JetBrains Mono, empty/loading states page 527:12902, notifications, settings, audit context wiring).
+## ▶ P7 RESUME BLOCK — paused 2026-07-20 mid-scan, NO P7 code written yet
+
+**Where P7 stands:** research/scan phase ~70% done, zero code. Pick up at "next steps" below.
+
+**Done so far (this session):**
+- Frame IDs found — **CT1** `287:12998` (certificates list), **CT2** `287:13001` (event cert detail/download), **CT3** `287:13004` (cycle-completion cert detail), **CT4** `287:13007` (public QR verification — this IS the PB flow), **PF1–3** `287:13021/13024/13027` (profile — still unbuilt, /profile 404s; fold into P8 or do alongside P7). **CA1** `287:13011` (admin list), **CA2** `287:13014` (manual issue dialog), **CA3** `287:13017` (revoke dialog). None screenshotted yet — do that first (Figma-first rule).
+- Schema read (Database Schema.md): **certificates DDL ~line 3884** (kind enum event_attendance|cycle_completion at ~3873; CHECKs partition FK columns by kind; payload jsonb = frozen snapshot w/ documented shape ~3981; two partial unique indexes = one active cert per practitioner-per-event / per-cycle; storage_bucket/path pair for the rendered PDF), **RLS block** (practitioner reads own; committee narrow revoke UPDATE active→revoked w/ revoked_by pinned; admin all; NO client INSERT — issuance is service-role only; NO public SELECT), **`verify_certificate(p_certificate_number)`** security-definer RPC = the ONLY public verify path (returns redacted fields incl. names from payload, not live joins).
+- certificate_status enum already exists (0004); certificate_kind does NOT — goes in the P7 migration.
+
+**Exact next steps:**
+1. Screenshot CT1–4, CA1–3 (+ PF1–3 if doing profile) via get_screenshot; review before building.
+2. Migration `…_certificates.sql`: certificate_kind enum + certificates table + indexes + RLS + verify_certificate() — all verbatim from schema doc (read the payload design notes ~3978–4000 again for the payload shape). Push + verify.
+3. Issuance pipeline (service-role server actions, per schema design notes):
+   - Event-attendance certs: issue on demand for verified attendance at a completed/approved event (v1: "Download certificate" generates-if-missing) — number `MMA-CERT-<yyyy>-<seq>`.
+   - Cycle-completion certs: issue when aggregateCycle(...).complete (DB3 button path) — number `MMA-CYCLE-<cycle>-<seq>`.
+   - CA2 manual issue + CA3/AI4 revoke (committee/admin; revoke = narrow status flip w/ reason).
+4. PDF: @react-pdf/renderer (already a dep, render in Node runtime route — NOT Edge), embed QR (qrcode dep) pointing at `${NEXT_PUBLIC_APP_URL}/verify/<certificate_number>`; upload to a private `certificates` bucket (create like cpd-evidence; storage session-token auth already works); store storage_bucket/path on the row.
+5. Public `/verify/[number]` page (CT4/PB): calls verify_certificate RPC via anon PostgREST or postgres-js; must be middleware-public (add to public paths like /auth) and render valid/revoked states.
+6. Screens: `/certificates` practitioner list+detail (CT1–3, nav "Certificates" item exists only in ADMIN group — practitioner nav has no certificates item; DB3 dashboard button + My CPD are the entry points per design), `/admin/certificates` (CA1–3). Wire DB3 "Download certificate" button on dashboard complete state.
+7. e2e `certificates.spec.ts`: issue-on-download happy path (needs a complete cycle → seed approved entries ≥ target for a dedicated user... or issue event cert from admin.spec's verified attendance — cheaper), verify page valid + revoked states, CA revoke negative (practitioner blocked). Full suite green.
+8. Completion logging per [[cpd-completion-logging]] (vault+memory+docs+push).
+
+**Then P8 polish (last phase):** PF1–3 profile screens (if not done in P7), empty/loading/error states (Enhancements page `527:12902`), self-host JetBrains Mono (fonts.gstatic DNS flake), app.audit_context wiring for audit actor attribution, notifications, settings, AL search/filters/export, dark-mode token sync, Resend SMTP, and the pre-launch checklist (C1 cycle total confirmation with MMA, commit strategy, deploy).
 
 ---
 
