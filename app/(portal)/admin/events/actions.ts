@@ -257,12 +257,12 @@ export async function verifyAttendanceAction(
             ${alloc.category_id}, ${event.activity_type_id},
             ${credits}::numeric, ${eventId}, ${attendanceId},
             ${alloc.accreditation_id}, ${alloc.allocation_id}, 'attendee',
-            ${JSON.stringify({
+            ${sql.json({
               method: "event_allocation",
               allocation_credits: raw,
               verified_by_organizer: true,
               ...(cap != null ? { max_per_attendee: cap } : {}),
-            })}::jsonb,
+            })},
             ${identity.user.id}
           )
         `;

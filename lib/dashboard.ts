@@ -4,6 +4,7 @@ import {
   aggregateCycle,
   type ApprovedEntry,
   type CycleFramework,
+  type CycleProgress,
 } from "@/lib/credits";
 
 /**
@@ -25,32 +26,42 @@ export interface DashboardData {
   perCategory: Record<string, { counted: number }>;
 }
 
-export async function getDashboardData(
+/** Current cycle + the practitioner's counted progress through it.
+ *  Shared by the dashboard (DB1–4) and cycle-completion certificate
+ *  issuance (P7) so "complete" always means the same thing. */
+export interface CycleProgressBundle {
+  cycle: {
+    id: string;
+    name: string;
+    startsOn: string;
+    endsOn: string;
+    target: number;
+  };
+  fw: CycleFramework;
+  progress: CycleProgress;
+}
+
+export async function loadCycleProgress(
   practitionerId: string
-): Promise<DashboardData> {
+): Promise<CycleProgressBundle | null> {
   const cycles = await sql<
-    { id: string; name: string; total_credits_required: string }[]
+    {
+      id: string;
+      name: string;
+      starts_on: string | Date;
+      ends_on: string | Date;
+      total_credits_required: string;
+    }[]
   >`
-    select id, name, total_credits_required
+    select id, name, starts_on, ends_on, total_credits_required
     from cpd_cycles
     where is_current
     limit 1
   `;
   const cycle = cycles[0];
-  if (!cycle) {
-    return {
-      cycle: null,
-      cat1Floor: null,
-      approved: 0,
-      pending: 0,
-      cat1Approved: 0,
-      pendingCount: 0,
-      state: "empty",
-      perCategory: {},
-    };
-  }
+  if (!cycle) return null;
 
-  const [categoryCaps, subcatCaps, ruleCaps, entries, pendingRows] =
+  const [categoryCaps, subcatCaps, ruleCaps, entries] =
     await Promise.all([
       sql<{ code: string; min_credits: string | null; max_credits: string | null }[]>`
         select cc.code, cap.min_credits, cap.max_credits
@@ -92,13 +103,6 @@ export async function getDashboardData(
           and e.cycle_id = ${cycle.id}
           and e.status = 'approved'
       `,
-      sql<{ sum: string | null; count: string }[]>`
-        select coalesce(sum(credits), 0) as sum, count(*) as count
-        from cpd_entries
-        where practitioner_id = ${practitionerId}
-          and cycle_id = ${cycle.id}
-          and status = 'pending'
-      `,
     ]);
 
   const fw: CycleFramework = {
@@ -131,6 +135,48 @@ export async function getDashboardData(
   }));
 
   const progress = aggregateCycle(approvedEntries, fw);
+  const isoDate = (d: string | Date) =>
+    d instanceof Date ? d.toISOString().slice(0, 10) : d;
+
+  return {
+    cycle: {
+      id: cycle.id,
+      name: cycle.name,
+      startsOn: isoDate(cycle.starts_on),
+      endsOn: isoDate(cycle.ends_on),
+      target: fw.target,
+    },
+    fw,
+    progress,
+  };
+}
+
+export async function getDashboardData(
+  practitionerId: string
+): Promise<DashboardData> {
+  const bundle = await loadCycleProgress(practitionerId);
+  if (!bundle) {
+    return {
+      cycle: null,
+      cat1Floor: null,
+      approved: 0,
+      pending: 0,
+      cat1Approved: 0,
+      pendingCount: 0,
+      state: "empty",
+      perCategory: {},
+    };
+  }
+  const { cycle, fw, progress } = bundle;
+
+  const pendingRows = await sql<{ sum: string | null; count: string }[]>`
+    select coalesce(sum(credits), 0) as sum, count(*) as count
+    from cpd_entries
+    where practitioner_id = ${practitionerId}
+      and cycle_id = ${cycle.id}
+      and status = 'pending'
+  `;
+
   const approved = progress.countedTotal;
   const pending = Number(pendingRows[0]?.sum ?? 0);
   const pendingCount = Number(pendingRows[0]?.count ?? 0);

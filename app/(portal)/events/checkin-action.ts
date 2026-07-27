@@ -129,11 +129,11 @@ export async function checkInAction(eventId: string): Promise<CheckInResult> {
         ${alloc.category_id}, ${event.activity_type_id}, ${credits},
         ${eventId}, ${att.id}, ${alloc.accreditation_id}, ${alloc.allocation_id},
         'attendee', null,
-        ${JSON.stringify({
+        ${sql.json({
           method: "event_allocation",
           allocation_credits: raw,
           ...(cap != null ? { max_per_attendee: cap } : {}),
-        })}::jsonb,
+        })},
         ${uid}
       )
     `;

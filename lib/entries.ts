@@ -78,14 +78,19 @@ export async function getMyCpdData(practitionerId: string): Promise<MyCpdData> {
         e.id,
         e.title,
         cc.code as category_code,
-        e.occurred_on,
+        -- Event-derived entries carry no occurred_on (schema CHECK) — fall
+        -- back to the event date so date rendering never sees null.
+        coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)
+          as occurred_on,
         e.credits,
         e.status
       from cpd_entries e
       join credit_categories cc on cc.id = e.category_id
+      left join events ev on ev.id = e.event_id
       where e.practitioner_id = ${practitionerId}
         and e.cycle_id = (select id from cpd_cycles where is_current limit 1)
-      order by e.occurred_on desc, e.created_at desc
+      order by coalesce(e.occurred_on, ev.starts_at::date) desc,
+               e.created_at desc
     `,
   ]);
 
@@ -140,12 +145,16 @@ export async function getRecentEntries(
     }[]
   >`
     select e.id, e.title, cc.code as category_code,
-           e.occurred_on, e.credits, e.status
+           coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)
+             as occurred_on,
+           e.credits, e.status
     from cpd_entries e
     join credit_categories cc on cc.id = e.category_id
+    left join events ev on ev.id = e.event_id
     where e.practitioner_id = ${practitionerId}
       and e.cycle_id = (select id from cpd_cycles where is_current limit 1)
-    order by e.occurred_on desc, e.created_at desc
+    order by coalesce(e.occurred_on, ev.starts_at::date) desc,
+             e.created_at desc
     limit ${limit}
   `;
   return rows.map((e) => ({
@@ -216,11 +225,14 @@ export async function getEntryDetail(
       cc.code as category_code,
       at.name as activity_type_name,
       at.calculation_method,
-      e.occurred_on, e.hours, e.sessions, e.credits, e.description,
+      coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)
+        as occurred_on,
+      e.hours, e.sessions, e.credits, e.description,
       e.reviewed_at, e.review_comments
     from cpd_entries e
     join credit_categories cc on cc.id = e.category_id
     join activity_types at on at.id = e.activity_type_id
+    left join events ev on ev.id = e.event_id
     where e.id = ${entryId} and e.practitioner_id = ${practitionerId}
     limit 1
   `;

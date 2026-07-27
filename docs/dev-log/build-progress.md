@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-07-19 (P6 COMPLETE — admin suite + audit_log, e2e 66 green; P7 certificates next, see [[Current State]])
+**Last updated:** 2026-07-27 (P7 COMPLETE — certificates + PDF + public verify, e2e 74 green; P8 polish next, see [[Current State]])
 
 ---
 
@@ -116,14 +116,17 @@
 
 ---
 
-## P7 — Certificates + PDF + Public Verify ⬜
-- [ ] Migrations: `certificates` + issuance
-- [ ] CT1–CT4 — Practitioner certificates (view/download)
-- [ ] CA — Certificate admin (issue/revoke)
-- [ ] PDF generation (@react-pdf/renderer) — certificate document
-- [ ] QR code (qrcode) → public verify URL
-- [ ] PB1–PB3 — Public verification pages (no-shell)
-- [ ] e2e: issue → download PDF → verify via QR link
+## P7 — Certificates + PDF + Public Verify ✅ (2026-07-27)
+- [x] Migration `20260726090000_certificates.sql` — certificate_kind enum + certificates table (CHECK-partitioned FK chain, partial unique one-active-per-scope indexes) + verify_certificate() security-definer RPC + RLS; private `cpd-certificates` bucket created
+- [x] Issuance: on-demand generate-if-missing (`lib/certificates.ts` ensureEventCertificates / ensureCycleCertificate); numbers GRD-EV/GRD-CY-<yyyy>-<seq6> per design (schema doc leaves format to app)
+- [x] CT1–CT3 — /my-cpd/certificates list + detail (paper + actions rail; routed under /my-cpd so My CPD nav stays active per frames)
+- [x] CA1–CA3 — /admin/certificates table + manual-issue dialog + revoke dialog (revoke withdraws linked entry credits)
+- [x] PDF (@react-pdf/renderer, Node route) + QR (qrcode) → uploaded to cpd-certificates, storage cols stamped, signed-URL download
+- [x] CT4/PB — public /verify/[number] (valid / revoked / not-found; already middleware-public)
+- [x] DB3 dashboard "Download certificate" wired (issues cycle cert → CT3)
+- [x] e2e certificates.spec.ts (8: issue-on-load, detail, PDF roundtrip, DB3, verify valid+revoked+not-found, revoke w/ DB asserts, admin-guard negative, axe ×2) — suite 74 green, unit 16/16
+- [x] Fix (latent P3+): postgres-js `${JSON.stringify(x)}::jsonb` double-encodes → all sites now `sql.json()`; repair migration `20260727090000_fix_stringified_jsonb.sql`
+- [x] Fix (latent P4): event-derived entries (occurred_on null) crashed dashboard/My CPD date rendering — queries now coalesce to event date
 
 ---
 

@@ -1,8 +1,8 @@
 # Current State
 
-**Snapshot date:** 2026-07-19 (P6 ✅ COMPLETE — admin suite + audit_log, e2e 66 green, unit 16/16, pushed — P7 certificates next)
+**Snapshot date:** 2026-07-27 (P7 ✅ COMPLETE — certificates + PDF + public verify, e2e 74 green, unit 16/16, pushed — P8 polish next)
 
-## ▶ RESUME HERE — 2026-07-19 (P6 done; next: P7 certificates)
+## (superseded) P6 snapshot — 2026-07-19
 
 **P6 landed (2026-07-19):**
 - ✅ Migration `20260719110000_audit_log.sql` (Part 6: audit_log + CHECKs + `audit_row_changes()` security-definer trigger on **14 tables** — fully-audited compliance set + configuration-audited framework set; snapshot-table triggers deferred with their tables). ⚠️ **Attribution note:** postgres-js writes carry no JWT → `actor_id` null; AL/OD1 resolve the actor from the row snapshot's updated_by/reviewed_by/created_by (app-level `app.audit_context` wiring = follow-up).
@@ -13,7 +13,27 @@
 - ✅ e2e `admin.spec.ts` 7 tests (OD1, EM create→submit DB-asserted, **EM7 verify→award DB-asserted**, UM grant/revoke DB-asserted, OG register, FM+AL live, axe). **Suite 66 e2e green (65+1 retry-flake), unit 16/16.** Playwright: `retries: 1` locally + workers 3 (suite outgrew the dev server; every spec passes in isolation — flakes are saturation, not bugs).
 - 🗒️ e2e cross-spec rules learned: approved events leak into every user's /events browse → after clicking a card title, `waitForURL(/\/events\/[uuid]/)` before touching detail buttons; direct action buttons (no dialog) also need the `expect().toPass()` click-retry wrapper.
 
-## ▶ P7 RESUME BLOCK — paused 2026-07-20 mid-scan, NO P7 code written yet
+## ▶ RESUME HERE — 2026-07-27 (P7 done; next: P8 polish)
+
+**P7 landed (2026-07-27):**
+- ✅ Migration `20260726090000_certificates.sql` — `certificate_kind` enum, `certificates` table verbatim from schema Part 7a (CHECK partitions the FK chain by kind; partial unique indexes = one active cert per practitioner-per-event / per-cycle; storage bucket/path paired), `verify_certificate()` security-definer RPC (anon-granted, the ONLY public path), full RLS (no client INSERT — issuance is server-side). Private bucket **cpd-certificates** created via storage API.
+- ✅ **Numbers follow the CT/CA designs, not the schema's working default**: `GRD-EV-<yyyy>-<seq6>` (event) / `GRD-CY-<yyyy>-<seq6>` (cycle) — schema doc explicitly leaves format to the application. Year-scoped count+1 sequence inside the tx (same pattern as accreditation numbers).
+- ✅ **Issuance = on-demand generate-if-missing** (`lib/certificates.ts`): `ensureEventCertificates` (verified attendance + approved/completed event that has ENDED + active accreditation + non-rejected entry), `ensureCycleCertificate` (aggregateCycle().complete via new `loadCycleProgress()` shared bundle refactored out of lib/dashboard.ts). Both run when /my-cpd/certificates loads; DB3 button + CA2 also ensure. Frozen payload per schema shapes (practitioner/event/credits, practitioner/cycle/totals).
+- ✅ **CT1–CT3** under `/my-cpd/certificates` (+ `[id]`) — routed under /my-cpd deliberately so the sidebar keeps **My CPD active** exactly as the frames show (practitioner nav has no Certificates item). CT1 tabs All/Event/Cycle + header-strip cards; CT2/CT3 = CertificatePaper (blue attendance / green completion) + rail (Issued pill, Download PDF, Share verification link = clipboard, Print) + details card.
+- ✅ **PDF**: `lib/certificate-pdf.tsx` (@react-pdf/renderer, Helvetica/Courier stand-ins — Geist embedding is P8), QR via `qrcode` → `/verify/<number>`; route `/my-cpd/certificates/[id]/pdf` (Node runtime) renders-if-missing → uploads → stamps storage cols → redirects to signed URL. Owner or committee/admin.
+- ✅ **CT4/PB** public `/verify/[number]`: valid / revoked / not-found states off the RPC; `/verify` was already in middleware PUBLIC_PREFIXES. Deviation noted: event-cert credits aren't shown (RPC redacts them by schema design; cycle certs show totals.earned).
+- ✅ **CA1–CA3** `/admin/certificates`: search+type+status GET-form filters, table w/ Valid/Revoked pills, **Issue certificate** dialog (CA2; event kind requires existing attendance + active accreditation — payload built from the allocation category + admin credits; cycle kind rides ensureCycleCertificate; issue-date field deviation: stamped now() server-side), **Revoke** dialog (CA3/AI4; active→revoked + rejects/zeroes the riding entry, same pattern as P5 accreditation revoke). Committee-side revoke UI deferred to P8 (action already allows cpd_committee per RLS).
+- ✅ **DB3 wired**: dashboard complete-state button → `cycleCertificateAction` → ensures cert → redirects to CT3 detail.
+- ✅ e2e `certificates.spec.ts` (8 tests, 7th user **e2e-certs@cpd-test.local** / certs.json): CT1 issue-on-load w/ DB number-format asserts, CT2 detail, PDF roundtrip (content-type + storage cols DB-assert), DB3 cycle path, public verify valid+not-found (anon context), CA3 revoke (DB assert cert+entry, then public revoked state), admin-guard negative, axe ×2. **Suite 74 green** (73 + 1 known saturation flaky-pass), unit 16/16.
+- 🐛 **Latent bug fixed (P3+, all phases): postgres-js double-encoded jsonb.** `${JSON.stringify(x)}::jsonb` sends the string as a json-typed param → stored a jsonb STRING (this—not driver behavior—was the old "jsonb comes back as string" gotcha; it also would have broken P5 committee-adjust's `calc_inputs || jsonb_build_object(...)` on LA-created entries). All 6 sites now use `sql.json(...)`; repair migration `20260727090000_fix_stringified_jsonb.sql` re-parses existing string-typed `calc_inputs`.
+- 🐛 **Latent bug fixed (P4): event-derived entries crashed dashboards.** Their `occurred_on` is NULL by schema CHECK; dashboard recent-entries + My CPD list + entry detail all `parseISO(...)`-crashed. Queries now `coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)`.
+- 🗒️ e2e gotchas: verified attendances need `verified_by` (CHECK); direct-inserted APPROVED entries need `reviewed_at/by` (CHECK); running a spec with `-g` still runs its `beforeAll` wipe (reseeds needed after); EV1 credit-line asserts needed `.first()` (other specs' approved events share the same line in browse).
+
+**Next: P8 polish (last phase):** PF1–3 profile screens (/profile still 404s), empty/loading/error states (Enhancements page `527:12902`), self-host fonts (Geist in PDFs + JetBrains Mono DNS flake), app.audit_context actor wiring, committee-side certificate revoke surface (AI4 in /committee/audit), notifications, settings, AL search/filters/export, dark-mode token sync, Resend SMTP, pre-launch checklist (C1 cycle total w/ MMA, deploy).
+
+---
+
+## (superseded) P7 pre-work scan — 2026-07-20
 
 **Where P7 stands:** research/scan phase ~70% done, zero code. Pick up at "next steps" below.
 

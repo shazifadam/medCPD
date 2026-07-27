@@ -1,5 +1,6 @@
 import { Info, TriangleAlert, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cycleCertificateAction } from "@/app/(portal)/dashboard/actions";
 
 /**
  * Dashboard state callout (DB2/DB3/DB4). DB1 (on-track) shows none.
@@ -63,8 +64,11 @@ export function DashboardCallout({
           completion certificate.
         </p>
       </div>
-      {/* Certificate download lands in P7 */}
-      <Button size="sm">Download certificate</Button>
+      <form action={cycleCertificateAction}>
+        <Button size="sm" type="submit">
+          Download certificate
+        </Button>
+      </form>
     </div>
   );
 }

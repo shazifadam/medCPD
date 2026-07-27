@@ -2,6 +2,8 @@
 
 import { randomUUID, createHash } from "crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { ensureCycleCertificate } from "@/lib/certificates";
 import { logActivitySchema } from "@/lib/schemas";
 import { getIdentity } from "@/lib/auth/identity";
 import { sql } from "@/lib/db";
@@ -139,7 +141,7 @@ export async function logActivityAction(
       ${rule.cycle_id}, ${rule.category_id}, ${rule.activity_type_id}, ${credits},
       ${input.title}, ${input.description || null}, ${input.occurredOn},
       ${hours}, ${sessions},
-      ${rule.rule_id}, ${JSON.stringify(calcInputs)}::jsonb, ${identity.user.id}
+      ${rule.rule_id}, ${sql.json(calcInputs as import("postgres").JSONValue)}, ${identity.user.id}
     )
     returning id
   `;
@@ -172,4 +174,17 @@ export async function logActivityAction(
 
   revalidatePath("/dashboard");
   return { status: "success", error: null };
+}
+
+/**
+ * DB3 — "Download certificate": issue the cycle-completion certificate if
+ * missing (P7 on-demand issuance) and land on its detail page (CT3), where
+ * the PDF download lives. redirect() throws internally — nothing returns.
+ */
+export async function cycleCertificateAction(): Promise<void> {
+  const identity = await getIdentity();
+  if (!identity) redirect("/login");
+  const certId = await ensureCycleCertificate(identity.user.id);
+  if (!certId) redirect("/dashboard");
+  redirect(`/my-cpd/certificates/${certId}`);
 }

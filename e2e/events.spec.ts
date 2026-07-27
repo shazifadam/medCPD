@@ -95,8 +95,10 @@ test("EV1 — browse lists the seeded events with credit lines", async ({
   await expect(page.getByRole("heading", { name: "CPD Events" })).toBeVisible();
   await expect(page.getByText("E2E External CME Evening")).toBeVisible();
   await expect(page.getByText("E2E Cardiology Conference")).toBeVisible();
-  await expect(page.getByText("2.0 credits · Cat 2")).toBeVisible();
-  await expect(page.getByText("6.0 credits · Cat 1")).toBeVisible();
+  // .first(): other specs' approved events (committee ER, certificates) can
+  // share the same credit line in browse — strict mode would trip.
+  await expect(page.getByText("2.0 credits · Cat 2").first()).toBeVisible();
+  await expect(page.getByText("6.0 credits · Cat 1").first()).toBeVisible();
   // Search narrows
   await page.getByLabel("Search events").fill("cardiology");
   await expect(page.getByText("E2E External CME Evening")).toHaveCount(0);
