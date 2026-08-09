@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   LayoutDashboard,
   Calendar,
   Award,
@@ -42,6 +43,11 @@ const PRACTITIONER_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Approvals", href: "/admin/approvals", icon: CircleCheck },
+  {
+    label: "Practitioner scores",
+    href: "/admin/practitioner-scores",
+    icon: BarChart3,
+  },
   {
     label: "Committee approvals",
     href: "/committee/entries",

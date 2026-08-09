@@ -105,6 +105,20 @@ export async function loadCycleProgress(
       `,
     ]);
 
+  // Per-practitioner eligibility overrides (Update 1 §4): latest row per
+  // field/category wins; applied to the framework bundle so dashboards,
+  // completion and certificates all honour them automatically.
+  const overrides = await sql<
+    { field: string; category_code: string | null; new_value: string }[]
+  >`
+    select distinct on (o.field, o.category_id)
+           o.field, cc.code as category_code, o.new_value::text
+    from practitioner_cycle_overrides o
+    left join credit_categories cc on cc.id = o.category_id
+    where o.practitioner_id = ${practitionerId} and o.cycle_id = ${cycle.id}
+    order by o.field, o.category_id, o.created_at desc
+  `;
+
   const fw: CycleFramework = {
     target: Number(cycle.total_credits_required),
     ruleCaps: ruleCaps.map((r) => ({
@@ -125,6 +139,14 @@ export async function loadCycleProgress(
       ])
     ),
   };
+
+  for (const o of overrides) {
+    if (o.field === "cycle_total") fw.target = Number(o.new_value);
+    if (o.field === "category_floor" && o.category_code) {
+      const cap = fw.categoryCaps[o.category_code] ?? { min: null, max: null };
+      fw.categoryCaps[o.category_code] = { ...cap, min: Number(o.new_value) };
+    }
+  }
 
   const approvedEntries: ApprovedEntry[] = entries.map((e) => ({
     credits: Number(e.credits),
