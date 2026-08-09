@@ -104,7 +104,7 @@ test("RA2→RA3 — approving grants the practitioner role", async ({ page }) =>
   const roleSelect = page.getByRole("dialog").getByLabel("Assign role");
   await expect(roleSelect).toHaveText("Practitioner");
   await expect(page.getByRole("dialog")).toContainText("Starting cycle");
-  await expect(page.getByRole("dialog")).toContainText("2026–2027 cycle");
+  await expect(page.getByRole("dialog")).toContainText("2026 cycle");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Approve & grant access" })

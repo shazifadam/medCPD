@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { getIdentity, initialsFor } from "@/lib/auth/identity";
+import { getNotifications } from "@/lib/notifications";
+import { markAllNotificationsReadAction } from "@/app/(portal)/notifications-actions";
 import { signOutAction } from "@/app/(auth)/actions";
 import { Navbar } from "@/components/features/shell/navbar";
 import { Sidebar } from "@/components/features/shell/sidebar";
@@ -19,9 +21,24 @@ export default async function PortalLayout({
   if (!identity) redirect("/login");
   if (identity.registrationState !== "verified") redirect("/pending");
 
+  const { items, unread } = await getNotifications(identity.user.id, 10);
+  const bellItems = items.map((n) => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    href: n.href,
+    read: n.readAt !== null,
+    createdAt: new Date(n.createdAt).toISOString(),
+  }));
+
   return (
     <div className="flex h-screen flex-col">
-      <Navbar initials={initialsFor(identity)} />
+      <Navbar
+        initials={initialsFor(identity)}
+        bellItems={bellItems}
+        bellUnread={unread}
+        markAllReadAction={markAllNotificationsReadAction}
+      />
       <div className="flex min-h-0 flex-1">
         <Sidebar roles={identity.roles} signOutAction={signOutAction} />
         <main className="min-w-0 flex-1 overflow-y-auto bg-background px-8 py-8">

@@ -17,7 +17,7 @@ test.describe("DB4 — dashboard, empty (new practitioner)", () => {
     await page.goto("/dashboard");
 
     // Header: cycle picker + actions
-    await expect(page.getByText("2026–2027 cycle")).toBeVisible();
+    await expect(page.getByText("2026 cycle")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Log CPD activity" })
     ).toBeVisible();

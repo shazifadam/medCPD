@@ -1,13 +1,27 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Menu, Settings } from "lucide-react";
+import { Menu, Settings } from "lucide-react";
+import {
+  NotificationsBell,
+  type BellItem,
+} from "@/components/features/shell/notifications-bell";
 
 /**
  * App-shell top bar (Figma DB1/OD1): hamburger + lockup left; bell,
  * settings, initials avatar right. Bell/settings are visual affordances
  * until notifications + settings land (P8).
  */
-export function Navbar({ initials }: { initials: string }) {
+export function Navbar({
+  initials,
+  bellItems,
+  bellUnread,
+  markAllReadAction,
+}: {
+  initials: string;
+  bellItems: BellItem[];
+  bellUnread: number;
+  markAllReadAction: () => Promise<void>;
+}) {
   return (
     <header className="flex h-[60px] shrink-0 items-center justify-between border-b border-border bg-card px-4">
       <div className="flex items-center gap-4">
@@ -30,13 +44,11 @@ export function Navbar({ initials }: { initials: string }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Bell className="h-5 w-5" aria-hidden />
-        </button>
+        <NotificationsBell
+          items={bellItems}
+          unread={bellUnread}
+          markAllReadAction={markAllReadAction}
+        />
         <button
           type="button"
           aria-label="Settings"
