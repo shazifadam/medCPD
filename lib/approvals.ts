@@ -22,6 +22,7 @@ export interface ApplicantRow {
 export interface ApplicantDetail extends ApplicantRow {
   phone: string | null;
   specialty: string | null;
+  primaryWorkplace: string | null;
   rejectionReason: string | null;
   verifiedAt: string | null;
 }
@@ -74,17 +75,20 @@ export async function getApplicant(
       verified_at: Date | string | null;
       created_at: Date | string;
       specialty: string | null;
+      primary_workplace: string | null;
     }[]
   >`
     select p.id, p.full_name, p.email, p.phone,
            p.mmdc_registration_type, p.mmdc_registration,
            p.registration_state, p.rejection_reason, p.verified_at,
            p.created_at,
-           s.name as specialty
+           s.name as specialty,
+           i.name as primary_workplace
     from profiles p
     left join practitioner_specialties ps
       on ps.practitioner_id = p.id and ps.is_primary
     left join specialties s on s.id = ps.specialty_id
+    left join institutions i on i.id = p.primary_institution_id
     where p.id = ${id}
     limit 1
   `;
@@ -98,6 +102,7 @@ export async function getApplicant(
     registrationType: r.mmdc_registration_type,
     registrationNumber: r.mmdc_registration,
     specialty: r.specialty,
+    primaryWorkplace: r.primary_workplace,
     state: r.registration_state,
     rejectionReason: r.rejection_reason,
     verifiedAt: r.verified_at ? iso(r.verified_at) : null,

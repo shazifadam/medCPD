@@ -64,6 +64,7 @@ export default async function ApplicantReviewPage({
     ],
     ["MMDC number", applicant.registrationNumber ?? "—"],
     ["Specialty", applicant.specialty ?? "—"],
+    ["Primary workplace", applicant.primaryWorkplace ?? "—"],
   ];
 
   return (

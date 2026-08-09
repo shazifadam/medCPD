@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getIdentity, initialsFor } from "@/lib/auth/identity";
 import { getNotifications } from "@/lib/notifications";
+import { sql } from "@/lib/db";
+import { avatarPublicUrl } from "@/lib/profile";
 import { markAllNotificationsReadAction } from "@/app/(portal)/notifications-actions";
 import { signOutAction } from "@/app/(auth)/actions";
 import { Navbar } from "@/components/features/shell/navbar";
@@ -21,7 +23,13 @@ export default async function PortalLayout({
   if (!identity) redirect("/login");
   if (identity.registrationState !== "verified") redirect("/pending");
 
-  const { items, unread } = await getNotifications(identity.user.id, 10);
+  const [{ items, unread }, avatarRows] = await Promise.all([
+    getNotifications(identity.user.id, 10),
+    sql<{ avatar_path: string | null }[]>`
+      select avatar_path from profiles where id = ${identity.user.id}
+    `,
+  ]);
+  const avatarUrl = avatarPublicUrl(avatarRows[0]?.avatar_path ?? null);
   const bellItems = items.map((n) => ({
     id: n.id,
     title: n.title,
@@ -38,6 +46,7 @@ export default async function PortalLayout({
         bellItems={bellItems}
         bellUnread={unread}
         markAllReadAction={markAllNotificationsReadAction}
+        avatarUrl={avatarUrl}
       />
       <div className="flex min-h-0 flex-1">
         <Sidebar roles={identity.roles} signOutAction={signOutAction} />

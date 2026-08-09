@@ -16,11 +16,13 @@ export function Navbar({
   bellItems,
   bellUnread,
   markAllReadAction,
+  avatarUrl = null,
 }: {
   initials: string;
   bellItems: BellItem[];
   bellUnread: number;
   markAllReadAction: () => Promise<void>;
+  avatarUrl?: string | null;
 }) {
   return (
     <header className="flex h-[60px] shrink-0 items-center justify-between border-b border-border bg-card px-4">
@@ -56,12 +58,21 @@ export function Navbar({
         >
           <Settings className="h-5 w-5" aria-hidden />
         </button>
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-medium text-accent-foreground"
-          aria-label="Account"
-        >
-          {initials}
-        </div>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt="Account"
+            className="h-9 w-9 rounded-full border border-border object-cover"
+          />
+        ) : (
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-medium text-accent-foreground"
+            aria-label="Account"
+          >
+            {initials}
+          </div>
+        )}
       </div>
     </header>
   );
