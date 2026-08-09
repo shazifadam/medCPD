@@ -258,11 +258,14 @@ test("OG — registering an organization lists it as a provider", async ({
 test("FM + AL — framework and audit log render live data", async ({
   page,
 }) => {
+  // /admin/framework redirects to the shared /framework area (Update 1)
   await page.goto("/admin/framework");
+  await page.waitForURL(/\/framework$/);
   await expect(page.getByRole("heading", { name: "Framework" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Rate book" })
-  ).toBeVisible();
+  await expect(page.getByText("2026 cycle")).toBeVisible();
+  // drill into the cycle's rate book
+  await page.getByRole("link", { name: "Rate book" }).first().click();
+  await expect(page.getByRole("heading", { name: "Rate book" })).toBeVisible();
   await expect(page.getByText("Skill-based workshop", { exact: false })).toBeVisible();
 
   await page.goto("/admin/audit-log");

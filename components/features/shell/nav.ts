@@ -49,7 +49,7 @@ const ADMIN_ITEMS: NavItem[] = [
   },
   { label: "Organizations", href: "/admin/organizations", icon: Globe },
   { label: "Manage events", href: "/admin/events", icon: Calendar },
-  { label: "Framework", href: "/admin/framework", icon: SlidersHorizontal },
+  { label: "Framework", href: "/framework", icon: SlidersHorizontal },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Certificates", href: "/admin/certificates", icon: Award },
   { label: "Audit log", href: "/admin/audit-log", icon: ShieldCheck },
@@ -64,6 +64,7 @@ const COMMITTEE_ITEMS: NavItem[] = [
     href: "/committee/audit",
     icon: ShieldCheck,
   },
+  { label: "Framework", href: "/framework", icon: SlidersHorizontal },
 ];
 
 export function navGroupsForRoles(roles: Role[]): NavGroup[] {
