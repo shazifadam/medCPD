@@ -75,6 +75,14 @@ async function main() {
   `;
   console.log("domain tables truncated (entries, certificates, events + satellites)");
 
+  // e2e framework runs create a non-current test cycle — remove any
+  // cycle that isn't the active one (rules/caps cascade).
+  const extraCycles = await sql<{ name: string }[]>`
+    delete from cpd_cycles where not is_current returning name
+  `;
+  if (extraCycles.length > 0)
+    console.log("removed test cycles:", extraCycles.map((c) => c.name).join(", "));
+
   // 3) Auth users except KEEP_EMAILS (profiles + role/specialty/membership
   //    rows cascade; verified_by/created_by references are set-null).
   const users: { id: string; email: string }[] = [];
