@@ -24,7 +24,7 @@ const AUTH_PATHS = ["/login", "/signup", "/forgot-password"];
 // Fully public pages: reachable in any auth state. /auth covers the email
 // link bridges (/auth/callback, /auth/confirm) — they run BEFORE a session
 // exists; gating them strands the ?code= exchange at /login.
-const PUBLIC_PREFIXES = ["/privacy", "/terms", "/verify", "/pending", "/auth"];
+const PUBLIC_PREFIXES = ["/privacy", "/terms", "/verify", "/pending", "/auth", "/api/cron"];
 
 function isAuthPath(pathname: string): boolean {
   return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
