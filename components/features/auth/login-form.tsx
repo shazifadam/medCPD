@@ -95,7 +95,17 @@ export function LoginForm() {
               <FormControl>
                 <Input
                   type="password"
+                  placeholder="Enter your password"
                   autoComplete="current-password"
+                  // Belt-and-braces: guarantee Enter submits even if an
+                  // extension/password manager tampers with implicit form
+                  // submission. No-op when native submission already fired.
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.defaultPrevented) {
+                      e.preventDefault();
+                      void form.handleSubmit(onSubmit)();
+                    }
+                  }}
                   {...field}
                 />
               </FormControl>
