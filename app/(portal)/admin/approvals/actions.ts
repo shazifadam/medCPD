@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole } from "@/lib/auth/identity";
 import { DEFAULT_GRANT_ROLE, isGrantableRole } from "@/lib/roles";
+import {
+  sendBrandedEmail,
+  registrationApprovedEmail,
+  registrationRejectedEmail,
+} from "@/lib/email/branded";
 
 export type ApprovalActionState = {
   status: "idle" | "success" | "error";
@@ -27,18 +32,23 @@ export async function approveApplicantAction(
     return { status: "error", error: "Unknown role." };
   }
 
-  const updated = await sql<{ id: string }[]>`
+  const updated = await sql<{ id: string; email: string; full_name: string }[]>`
     update profiles
     set registration_state = 'verified',
         verified_at = now(),
         verified_by = ${identity.user.id},
         rejection_reason = null
     where id = ${applicantId} and registration_state <> 'verified'
-    returning id
+    returning id, email, full_name
   `;
   if (updated.length === 0) {
     return { status: "error", error: "Applicant is already verified." };
   }
+  await sendBrandedEmail(
+    updated[0].email,
+    "Your registration is approved — Gradus CPD",
+    registrationApprovedEmail(updated[0].full_name)
+  );
 
   await sql`
     insert into role_assignments (user_id, role, granted_by)
@@ -72,18 +82,23 @@ export async function rejectApplicantAction(
     return { status: "error", error: "A rejection reason is required." };
   }
 
-  const updated = await sql<{ id: string }[]>`
+  const updated = await sql<{ id: string; email: string; full_name: string }[]>`
     update profiles
     set registration_state = 'rejected',
         rejection_reason = ${fullReason},
         verified_at = null,
         verified_by = null
     where id = ${applicantId} and registration_state = 'pending'
-    returning id
+    returning id, email, full_name
   `;
   if (updated.length === 0) {
     return { status: "error", error: "Only pending applications can be rejected." };
   }
+  await sendBrandedEmail(
+    updated[0].email,
+    "Update on your registration — Gradus CPD",
+    registrationRejectedEmail(updated[0].full_name, fullReason)
+  );
 
   revalidatePath("/admin/approvals");
   return { status: "success", error: null };

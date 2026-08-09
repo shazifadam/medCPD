@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole, type Identity } from "@/lib/auth/identity";
+import {
+  sendBrandedEmail,
+  entryApprovedEmail,
+  entryRejectedEmail,
+} from "@/lib/email/branded";
 
 export type CommitteeActionState = {
   status: "idle" | "success" | "error";
@@ -84,6 +89,35 @@ export async function reviewEntryAction(input: {
           `;
   if (rows.length === 0) {
     return { status: "error", error: "Only pending entries can be reviewed." };
+  }
+
+  // Notify the practitioner of the outcome (non-fatal; e2e addresses skipped).
+  const detail = await sql<
+    { email: string; full_name: string; title: string; credits: string }[]
+  >`
+    select p.email, p.full_name,
+           coalesce(e.title, ev.title, 'your CPD entry') as title,
+           e.credits::text as credits
+    from cpd_entries e
+    join profiles p on p.id = e.practitioner_id
+    left join events ev on ev.id = e.event_id
+    where e.id = ${input.entryId}
+  `;
+  if (detail.length > 0) {
+    const d = detail[0];
+    if (input.decision === "reject") {
+      await sendBrandedEmail(
+        d.email,
+        "Your CPD entry was not approved — Gradus CPD",
+        entryRejectedEmail(d.full_name, d.title, input.comments!.trim())
+      );
+    } else {
+      await sendBrandedEmail(
+        d.email,
+        "Your CPD entry was approved — Gradus CPD",
+        entryApprovedEmail(d.full_name, d.title, d.credits, input.decision === "adjust")
+      );
+    }
   }
 
   revalidatePath("/committee/entries");
