@@ -1,6 +1,13 @@
 # Current State
 
-**Snapshot date:** 2026-08-09 (LAUNCH INFRA ✅ — Resend email + Vercel production deploy LIVE at https://cpd.medicalmv.com; P8 polish still pending)
+**Snapshot date:** 2026-08-09 (CPD UPDATE 1 APPROVED — development starting; launch infra live at https://cpd.medicalmv.com)
+
+## ▶ RESUME HERE — 2026-08-09 (CPD Update 1: designs approved, dev started)
+
+- **Plan:** `CPD Update 1 — Feature Plan.md` (this folder) — 5 features, revised framework lifecycle, build order, open-question defaults. Status APPROVED.
+- **Designs:** Figma v1 Flow Map → sections **"CPD Update 1 — Proposal"** (9 frames incl. U1-FM5) + **"CPD Update 1 — Flows"** (F1–F6). Key final decisions: FM5 has ONE header "Edit rate book" button (no per-row edits) + cycle selector + cycle-total strip; F3 starts at FM2 cycles list; F6 = FM2 → locked rate book → thresholds → FM7 confirm → notify.
+- **Build order:** 1 migrations → 2 notifications → 3 org combobox → 4 framework editing → 5 practitioner scores/overrides → 6 profile+avatar → 7 year-end cron. Working through chunks with e2e per test gate.
+- Earlier today (see sections below): registration blocker fixed (Resend SMTP), production deploy, branded auth+lifecycle emails, data wipe (hussain-only), skeletons, perf region fix (bom1), login UX.
 
 ## ▶ RESUME HERE — 2026-08-09 (launch infra live; next: tester-prep tasks + P8)
 
