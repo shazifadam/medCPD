@@ -28,22 +28,24 @@ export default async function DashboardPage() {
   const identity = await getIdentity();
   if (!identity) redirect("/login");
 
-  const [profile] = await sql<
-    { full_name: string; mmdc_registration: string | null; specialty: string | null }[]
-  >`
-    select p.full_name, p.mmdc_registration, s.name as specialty
-    from profiles p
-    left join practitioner_specialties ps
-      on ps.practitioner_id = p.id and ps.is_primary
-    left join specialties s on s.id = ps.specialty_id
-    where p.id = ${identity.user.id}
-  `;
-  const [data, activityTypes, recent, allEvents] = await Promise.all([
-    getDashboardData(identity.user.id),
-    getActivityTypeOptions(),
-    getRecentEntries(identity.user.id),
-    listEvents(identity.user.id),
-  ]);
+  const [profileRows, data, activityTypes, recent, allEvents] =
+    await Promise.all([
+      sql<
+        { full_name: string; mmdc_registration: string | null; specialty: string | null }[]
+      >`
+        select p.full_name, p.mmdc_registration, s.name as specialty
+        from profiles p
+        left join practitioner_specialties ps
+          on ps.practitioner_id = p.id and ps.is_primary
+        left join specialties s on s.id = ps.specialty_id
+        where p.id = ${identity.user.id}
+      `,
+      getDashboardData(identity.user.id),
+      getActivityTypeOptions(),
+      getRecentEntries(identity.user.id),
+      listEvents(identity.user.id),
+    ]);
+  const [profile] = profileRows;
   const upcoming = allEvents.filter((e) => !e.isPast).slice(0, 3);
 
   const identityLine = [

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { sql } from "@/lib/db";
 import { auth } from "./supabase";
 import type { AuthUser, Role } from "./types";
@@ -23,29 +24,32 @@ export interface Identity {
   roles: Role[];
 }
 
-/** Full identity for the current session, or null when signed out. */
-export async function getIdentity(): Promise<Identity | null> {
+/**
+ * Full identity for the current session, or null when signed out.
+ * Request-memoized (React cache): layout, page, and role guards all call
+ * this in one render pass — only the first call hits auth + DB.
+ */
+export const getIdentity = cache(async (): Promise<Identity | null> => {
   const user = await auth.getUser();
   if (!user) return null;
 
-  const profileRows = await sql<
-    { registration_state: RegistrationState; full_name: string }[]
-  >`
-    select registration_state, full_name
-    from profiles
-    where id = ${user.id}
-    limit 1
-  `;
+  const [profileRows, roleRows] = await Promise.all([
+    sql<{ registration_state: RegistrationState; full_name: string }[]>`
+      select registration_state, full_name
+      from profiles
+      where id = ${user.id}
+      limit 1
+    `,
+    sql<{ role: Role }[]>`
+      select role
+      from role_assignments
+      where user_id = ${user.id}
+        and revoked_at is null
+    `,
+  ]);
   // No profile row yet (trigger lag / just-created) → treat as pending.
   const registrationState = profileRows[0]?.registration_state ?? "pending";
   const fullName = profileRows[0]?.full_name ?? "";
-
-  const roleRows = await sql<{ role: Role }[]>`
-    select role
-    from role_assignments
-    where user_id = ${user.id}
-      and revoked_at is null
-  `;
 
   return {
     user,
@@ -53,7 +57,7 @@ export async function getIdentity(): Promise<Identity | null> {
     registrationState,
     roles: roleRows.map((r) => r.role),
   };
-}
+});
 
 /** "Shazif Adam" → "SA"; falls back to the email's first letter. */
 export function initialsFor(identity: Identity): string {
