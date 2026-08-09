@@ -1,12 +1,20 @@
 # Current State
 
-**Snapshot date:** 2026-08-09 (CPD UPDATE 1 APPROVED — development starting; launch infra live at https://cpd.medicalmv.com)
+**Snapshot date:** 2026-08-09 (CPD UPDATE 1 ✅ ALL 7 STEPS BUILT — unit 16/16, e2e 94 green; live at https://cpd.medicalmv.com)
 
 ## ▶ RESUME HERE — 2026-08-09 (CPD Update 1: designs approved, dev started)
 
 - **Plan:** `CPD Update 1 — Feature Plan.md` (this folder) — 5 features, revised framework lifecycle, build order, open-question defaults. Status APPROVED.
 - **Designs:** Figma v1 Flow Map → sections **"CPD Update 1 — Proposal"** (9 frames incl. U1-FM5) + **"CPD Update 1 — Flows"** (F1–F6). Key final decisions: FM5 has ONE header "Edit rate book" button (no per-row edits) + cycle selector + cycle-total strip; F3 starts at FM2 cycles list; F6 = FM2 → locked rate book → thresholds → FM7 confirm → notify.
-- **Build order:** 1 migrations → 2 notifications → 3 org combobox → 4 framework editing → 5 practitioner scores/overrides → 6 profile+avatar → 7 year-end cron. Working through chunks with e2e per test gate.
+- **Build order — ALL DONE:** 1 migrations ✅ → 2 notifications ✅ → 3 org combobox ✅ → 4 framework editing ✅ (d5467b8) → 5 practitioner scores/overrides ✅ (f667070) → 6 profile+avatar ✅ (e7164de) → 7 year-end cron ✅ (bf3f4eb). Full suite: unit 16/16, e2e 94 green.
+- Step 4: /framework area (admin+committee) — FM2 cycles list, FM5 rate book (single Edit mode gated draft+0 entries; committee-only Approve locks rates + fan-out), FM6 thresholds + FM7 confirm + 31 Dec 21:00 MVT lock. Latent P6 bug fixed (audit trigger row_id on composite-PK caps table; migration 20260809140000).
+- Step 5: /admin/practitioner-scores (search/specialty/score filters) + detail w/ Adjust dialog (reason + evidence required → cpd-adjustments bucket, override row + eligibility_adjusted notification). loadCycleProgress applies latest overrides → dashboards/completion/certs honour them.
+- Step 6: /profile — photo → cpd-avatars → navbar avatar, primary workplace + other-workplace chips (select-or-create), locked MMA credentials; RA2 shows stated workplace; Profile nav restored.
+- Step 7: /api/cron/year-end (Bearer CRON_SECRET, daily 00:30 MVT via vercel.json): keep-alive every run; after 31 Dec — certificates for complete practitioners on frozen thresholds → auto-create next-year DRAFT cycle (clones rules/caps) → flip is_current → notify all. **⚠️ MANUAL: add CRON_SECRET env var in the Vercel dashboard (value in .env.local) — CLI is off-limits (wrong account).**
+- DB re-wiped after e2e (hussain-only + framework; wipe script now also removes non-current test cycles).
+- Step 1: migration 20260809120000 (cycle → '2026 cycle' calendar year + rate_book_status; organizer FK; notifications/overrides/workplaces tables; avatar+primary_institution profile cols; buckets cpd-adjustments/cpd-avatars). Applied via postgres-js + schema_migrations row.
+- Step 2: navbar bell + popover live (mark-all-read, unread dot), lib/notifications fan-out helpers. e2e notifications.spec 3/3.
+- Step 3: OrgCombobox select-or-create shared component; event create requires organizer (inline org create verified in admin.spec); signup collects required Primary workplace → profiles.primary_institution_id + workplace row.
 - Earlier today (see sections below): registration blocker fixed (Resend SMTP), production deploy, branded auth+lifecycle emails, data wipe (hussain-only), skeletons, perf region fix (bom1), login UX.
 
 ## ▶ RESUME HERE — 2026-08-09 (launch infra live; next: tester-prep tasks + P8)
