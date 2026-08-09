@@ -8,6 +8,7 @@ import {
 import type { ActivityTypeOption } from "@/lib/activities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OrgCombobox, type OrgOption } from "@/components/patterns/org-combobox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -23,8 +24,10 @@ import {
  */
 export function CreateEventForm({
   activityTypes,
+  organizations,
 }: {
   activityTypes: ActivityTypeOption[];
+  organizations: OrgOption[];
 }) {
   const [activityTypeId, setActivityTypeId] = useState("");
   const [state, setState] = useState<AdminEventActionState>({
@@ -97,6 +100,19 @@ export function CreateEventForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="ev-organizer"
+            className="text-sm font-medium text-foreground"
+          >
+            Organizer
+          </label>
+          <OrgCombobox
+            triggerId="ev-organizer"
+            fieldName="organizerInstitution"
+            options={organizations}
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <label

@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AuthCard, AuthHeading } from "./auth-card";
+import { OrgCombobox, type OrgOption } from "@/components/patterns/org-combobox";
 
 export interface SpecialtyOption {
   id: string;
@@ -36,8 +37,10 @@ export interface SpecialtyOption {
 
 export function SignUpForm({
   specialties,
+  organizations,
 }: {
   specialties: SpecialtyOption[];
+  organizations: OrgOption[];
 }) {
   const [state, setState] = useState<SignUpState>({
     status: "idle",
@@ -55,6 +58,7 @@ export function SignUpForm({
       email: "",
       phoneDialCode: DEFAULT_DIAL_CODE,
       phone: "",
+      primaryWorkplace: "",
     },
   });
 
@@ -301,6 +305,26 @@ export function SignUpForm({
                       {form.formState.errors.phoneDialCode.message}
                     </p>
                   )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="primaryWorkplace"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="su-workplace">Primary workplace</FormLabel>
+                  <FormControl>
+                    <OrgCombobox
+                      triggerId="su-workplace"
+                      fieldName="primaryWorkplaceDisplay"
+                      options={organizations}
+                      placeholder="Search or select your workplace"
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

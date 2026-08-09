@@ -36,6 +36,7 @@ test.describe("AU3 — sign up, form", () => {
     );
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Contact number")).toBeVisible();
+    await expect(page.getByLabel("Primary workplace")).toBeVisible();
     await expect(page.getByLabel(/password/i)).toHaveCount(0);
 
     await expect(

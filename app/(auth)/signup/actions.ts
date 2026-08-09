@@ -4,6 +4,7 @@ import { signUpSchema } from "@/lib/schemas";
 import { formatPhone, DEFAULT_DIAL_CODE } from "@/lib/phone";
 import { auth } from "@/lib/auth";
 import { sql } from "@/lib/db";
+import { resolveOrganization } from "@/lib/orgs";
 
 export type SignUpState = {
   status: "idle" | "success" | "error";
@@ -23,6 +24,7 @@ export async function signUpAction(
     // Missing code (older client bundle / no JS) = Maldives, never a failure.
     phoneDialCode: formData.get("phoneDialCode") || DEFAULT_DIAL_CODE,
     phone: formData.get("phone"),
+    primaryWorkplace: formData.get("primaryWorkplace"),
   });
   if (!parsed.success) {
     // Client validation (shared schema) should catch this first — if we land
@@ -83,6 +85,30 @@ export async function signUpAction(
     `;
   } catch {
     // Non-fatal: profile exists, specialty can be added on PF2 later.
+  }
+
+  // Primary workplace (Update 1 §5): resolve/create the institution and
+  // link it — select-or-create, same contract as the event organizer field.
+  try {
+    const [profile] = await sql<{ id: string }[]>`
+      select id from profiles where email = ${input.email}
+    `;
+    if (profile) {
+      const orgId = await resolveOrganization(input.primaryWorkplace, profile.id);
+      if (orgId) {
+        await sql`
+          update profiles set primary_institution_id = ${orgId}
+          where id = ${profile.id}
+        `;
+        await sql`
+          insert into practitioner_workplaces (practitioner_id, institution_id)
+          values (${profile.id}, ${orgId})
+          on conflict do nothing
+        `;
+      }
+    }
+  } catch {
+    // Non-fatal: workplace can be completed on the profile page later.
   }
 
   return { status: "success", error: null };

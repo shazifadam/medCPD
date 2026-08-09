@@ -39,6 +39,7 @@ test.beforeAll(async () => {
       (select id from events where title = ${EVENT_TITLE})`;
     await sql`delete from events where title = ${EVENT_TITLE}`;
     await sql`delete from institutions where name = ${ORG_NAME}`;
+    await sql`delete from institutions where name = 'E2E Organizer Institute'`;
     await sql`
       update role_assignments set revoked_at = now()
       where user_id in (select id from profiles where email = ${ROLE_SUBJECT})
@@ -71,6 +72,10 @@ test("EM1–EM4 — create a draft event and submit it for accreditation", async
   await page
     .getByRole("option", { name: /Scientific meeting \/ conference/ })
     .click();
+  // Organizer: select-or-create combobox (Update 1) — create inline
+  await page.getByLabel("Organizer").click();
+  await page.getByPlaceholder("Type a name…").fill("E2E Organizer Institute");
+  await page.getByText(/Create .E2E Organizer Institute./).click();
   await page.getByLabel("Venue").fill("MMA HQ, Malé");
   await page.getByLabel("Starts").fill("2026-09-01T09:00");
   await page.getByLabel("Ends").fill("2026-09-01T17:00");

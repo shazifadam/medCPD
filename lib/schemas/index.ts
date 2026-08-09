@@ -45,6 +45,10 @@ export const signUpSchema = z
       .string()
       .trim()
       .regex(/^[0-9]{6,15}$/, "Enter a valid contact number"),
+    /** OrgCombobox value: `id:<uuid>` or `new:<name>` (Update 1 §5). */
+    primaryWorkplace: z
+      .string()
+      .regex(/^(id:.+|new:.{2,})$/, "Select or add your primary workplace"),
   })
   .superRefine((values, ctx) => {
     // The number field is revealed by the type radio (user directive

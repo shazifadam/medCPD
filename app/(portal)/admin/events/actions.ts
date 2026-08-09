@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole } from "@/lib/auth/identity";
+import { resolveOrganization } from "@/lib/orgs";
 
 export type AdminEventActionState = {
   status: "idle" | "success" | "error";
@@ -36,6 +37,7 @@ export async function createEventAction(
   const description = String(formData.get("description") ?? "").trim();
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw ? Number(capacityRaw) : null;
+  const organizerRaw = String(formData.get("organizerInstitution") ?? "");
 
   if (!title || title.length < 3) {
     return { status: "error", error: "Event title is required." };
@@ -52,6 +54,12 @@ export async function createEventAction(
   if (!venue) {
     return { status: "error", error: "Venue is required for in-person events." };
   }
+  const organizerId = organizerRaw
+    ? await resolveOrganization(organizerRaw, identity.user.id)
+    : null;
+  if (!organizerId) {
+    return { status: "error", error: "Select or create the organizing organization." };
+  }
 
   // Slug uniqueness: numeric suffix on collision (schema 4a convention).
   const base = slugify(title);
@@ -63,11 +71,12 @@ export async function createEventAction(
   const [event] = await sql<{ id: string }[]>`
     insert into events
       (title, slug, description, activity_type_id, status, venue_name,
-       starts_at, ends_at, capacity, is_public, created_by)
+       starts_at, ends_at, capacity, is_public, created_by,
+       organizer_institution_id)
     values
       (${title}, ${slug}, ${description || null}, ${activityTypeId}, 'draft',
        ${venue}, ${startsAt}, ${endsAt}, ${capacity}, true,
-       ${identity.user.id})
+       ${identity.user.id}, ${organizerId})
     returning id
   `;
 

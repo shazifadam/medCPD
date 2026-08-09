@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getActivityTypeOptions } from "@/lib/activities";
+import { listOrganizations } from "@/lib/orgs";
 import { CreateEventForm } from "@/components/features/admin-events/create-event-form";
 
 export const metadata: Metadata = { title: "Create event" };
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 /** EM1–EM4 — create event (Figma 287:12906…12915, wizard compressed). */
 export default async function CreateEventPage() {
-  const activityTypes = await getActivityTypeOptions();
+  const [activityTypes, organizations] = await Promise.all([
+    getActivityTypeOptions(),
+    listOrganizations(),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-[900px] flex-col gap-6">
@@ -26,7 +30,7 @@ export default async function CreateEventPage() {
           Set up an accredited event on behalf of an organizer
         </p>
       </div>
-      <CreateEventForm activityTypes={activityTypes} />
+      <CreateEventForm activityTypes={activityTypes} organizations={organizations} />
     </div>
   );
 }
