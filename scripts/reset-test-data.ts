@@ -67,29 +67,53 @@ async function main() {
     console.log(`storage ${bucket}: removed ${objects.length} object(s)`);
   }
 
-  // 2) Domain data (before user deletion so no FK restrict can block it).
-  await sql`
-    truncate table
-      cpd_entry_attachments,
-      cpd_entries,
-      certificates,
-      event_reviews,
-      event_credit_allocations,
-      event_attendances,
-      event_registrations,
-      event_sessions,
-      event_organizers,
-      event_accreditations,
-      events
-    cascade
-  `;
-  console.log("domain tables truncated (entries, certificates, events + satellites)");
+  // 2) Domain data. FULL mode truncates everything; default mode deletes
+  //    ONLY rows belonging to e2e fixture users/events — real testers'
+  //    entries, events and the audit trail are untouched.
+  if (FULL) {
+    await sql`
+      truncate table
+        cpd_entry_attachments,
+        cpd_entries,
+        certificates,
+        event_reviews,
+        event_credit_allocations,
+        event_attendances,
+        event_registrations,
+        event_sessions,
+        event_organizers,
+        event_accreditations,
+        events
+      cascade
+    `;
+    console.log("domain tables truncated (entries, certificates, events + satellites)");
+  } else {
+    await sql`
+      delete from cpd_entries where practitioner_id in
+        (select id from profiles where email like '%@cpd-test.local')
+    `;
+    await sql`
+      delete from certificates where practitioner_id in
+        (select id from profiles where email like '%@cpd-test.local')
+    `;
+    await sql`
+      delete from events where created_by in
+        (select id from profiles where email like '%@cpd-test.local')
+    `;
+    console.log("e2e-only: removed fixture users' entries, certificates and events");
+  }
 
   // e2e framework runs create a non-current test cycle — remove any
   // cycle that isn't the active one (rules/caps cascade).
-  const extraCycles = await sql<{ name: string }[]>`
-    delete from cpd_cycles where not is_current returning name
-  `;
+  const extraCycles = FULL
+    ? await sql<{ name: string }[]>`
+        delete from cpd_cycles where not is_current returning name
+      `
+    : await sql<{ name: string }[]>`
+        delete from cpd_cycles
+        where not is_current and name = '2027 cycle'
+        returning name
+      `;
   if (extraCycles.length > 0)
     console.log("removed test cycles:", extraCycles.map((c) => c.name).join(", "));
 
@@ -141,9 +165,11 @@ async function main() {
   if (e2eOrgs.length > 0)
     console.log("removed E2E institutions:", e2eOrgs.map((o) => o.name).join(", "));
 
-  // 4) Audit log last — user deletions above just wrote rows into it.
-  await sql`truncate table audit_log`;
-  console.log("audit_log truncated");
+  // 4) Audit log: FULL mode only — it is compliance data.
+  if (FULL) {
+    await sql`truncate table audit_log`;
+    console.log("audit_log truncated");
+  }
 
   // 5) Verify
   const counts = await sql<{ t: string; n: string }[]>`
