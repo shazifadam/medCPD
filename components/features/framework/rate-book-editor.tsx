@@ -94,6 +94,12 @@ export function RateBookEditor({
               Edit rate book
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/framework/${cycle.id}/thresholds`)}
+          >
+            Edit thresholds
+          </Button>
           <Select
             value={cycle.id}
             onValueChange={(id) => router.push(`/framework/${id}`)}

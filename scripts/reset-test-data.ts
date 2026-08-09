@@ -1,7 +1,14 @@
 /**
- * Reset test data — wipe users + events, keep the framework.
+ * Reset test data.
  *
- * Run:  npx tsx scripts/reset-test-data.ts
+ * DEFAULT (safe): removes ONLY e2e fixtures — @cpd-test.local users,
+ * E2E-named institutions, non-current test cycles, and domain data.
+ * FULL WIPE (`--all --yes`): removes EVERY user except KEEP_EMAILS.
+ * With --all it first LISTS the real accounts it would delete and
+ * aborts without --yes. Never run --all once real testers exist
+ * without checking that list.
+ *
+ * Run:  npx tsx scripts/reset-test-data.ts [--all [--yes]]
  * Env:  reads .env.local (DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL,
  *       SUPABASE_SERVICE_ROLE_KEY)
  *
@@ -21,6 +28,9 @@ import { join } from "path";
 import postgres from "postgres";
 
 const KEEP_EMAILS = ["hussain.shaxif002@gmail.com"];
+const FULL = process.argv.includes("--all");
+const CONFIRMED = process.argv.includes("--yes");
+const isTestEmail = (e: string) => e.toLowerCase().endsWith("@cpd-test.local");
 const BUCKETS = ["cpd-evidence", "cpd-certificates"];
 
 // .env.local loader (script runs outside Next)
@@ -96,9 +106,20 @@ async function main() {
     users.push(...data.users.map((u) => ({ id: u.id, email: u.email })));
     if (data.users.length < 100) break;
   }
+  const candidates = users.filter(
+    (u) =>
+      !KEEP_EMAILS.includes(u.email.toLowerCase()) &&
+      (FULL || isTestEmail(u.email))
+  );
+  const realCandidates = candidates.filter((u) => !isTestEmail(u.email));
+  if (FULL && realCandidates.length > 0 && !CONFIRMED) {
+    console.error("\n⛔ --all would delete REAL accounts:");
+    for (const u of realCandidates) console.error(`   - ${u.email}`);
+    console.error("Re-run with --all --yes to confirm. Aborting (nothing deleted).");
+    process.exit(1);
+  }
   let deleted = 0;
-  for (const u of users) {
-    if (KEEP_EMAILS.includes(u.email.toLowerCase())) continue;
+  for (const u of candidates) {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${u.id}`, {
       method: "DELETE",
       headers: authHeaders,
@@ -110,7 +131,15 @@ async function main() {
     deleted++;
     console.log(`  deleted user ${u.email}`);
   }
-  console.log(`auth users: deleted ${deleted}, kept ${users.length - deleted}`);
+  console.log(
+    `auth users: deleted ${deleted} (${FULL ? "full" : "e2e-only"} mode), kept ${users.length - deleted}`
+  );
+
+  const e2eOrgs = await sql<{ name: string }[]>`
+    delete from institutions where name like 'E2E %' returning name
+  `;
+  if (e2eOrgs.length > 0)
+    console.log("removed E2E institutions:", e2eOrgs.map((o) => o.name).join(", "));
 
   // 4) Audit log last — user deletions above just wrote rows into it.
   await sql`truncate table audit_log`;
