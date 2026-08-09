@@ -84,6 +84,7 @@ export function OrgCombobox({
             id={triggerId}
             role="combobox"
             aria-expanded={open}
+            aria-controls={`${fieldName}-listbox`}
             className={cn(
               "flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm shadow-sm",
               selected ? "text-foreground" : "text-muted-foreground"
@@ -97,7 +98,7 @@ export function OrgCombobox({
           align="start"
           className="w-[var(--radix-popover-trigger-width)] p-0"
         >
-          <Command>
+          <Command id={`${fieldName}-listbox`}>
             <CommandInput
               placeholder="Type a name…"
               value={query}

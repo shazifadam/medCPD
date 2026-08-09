@@ -2,7 +2,6 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import type { ProfileData } from "@/lib/profile";
 import {
