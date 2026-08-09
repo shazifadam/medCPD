@@ -310,7 +310,14 @@ export function SignUpForm({
               {pending && (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
               )}
-              {pending ? "Creating account…" : "Create account"}
+              {pending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Creating your account…
+                </>
+              ) : (
+                "Create account"
+              )}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Lock } from "lucide-react";
+import { AlertTriangle, Loader2, Lock } from "lucide-react";
 import { setPasswordSchema, type SetPasswordInput } from "@/lib/schemas";
 import {
   setPasswordAction,
@@ -122,7 +122,14 @@ export function SetPasswordForm() {
             />
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Updating…" : "Update password"}
+              {pending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Updating password…
+                </>
+              ) : (
+                "Update password"
+              )}
             </Button>
           </form>
         </Form>

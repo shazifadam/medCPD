@@ -89,7 +89,8 @@ test.describe("Practitioner shell (DB1 header)", () => {
     await expect(nav.getByRole("link", { name: "Dashboard" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Events" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "My CPD" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Profile" })).toBeVisible();
+    // Profile hidden until PF1-3 land (P8)
+    await expect(nav.getByRole("link", { name: "Profile" })).toHaveCount(0);
     // No admin group for plain practitioners
     await expect(nav.getByText("Administration")).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Audit log" })).toHaveCount(0);

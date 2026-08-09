@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MailCheck } from "lucide-react";
+import { Loader2, MailCheck } from "lucide-react";
 import {
   forgotPasswordSchema,
   type ForgotPasswordInput,
@@ -98,7 +98,14 @@ export function ForgotPasswordForm() {
               />
 
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? "Sending…" : "Send reset link"}
+                {pending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Sending reset link…
+                  </>
+                ) : (
+                  "Send reset link"
+                )}
               </Button>
 
               <p className="text-center text-sm">

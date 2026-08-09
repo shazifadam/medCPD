@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Calendar,
   Award,
-  User,
   CircleCheck,
   Globe,
   SlidersHorizontal,
@@ -36,7 +35,8 @@ const PRACTITIONER_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Events", href: "/events", icon: Calendar },
   { label: "My CPD", href: "/my-cpd", icon: Award },
-  { label: "Profile", href: "/profile", icon: User },
+  // Profile hidden until the PF1–3 screens land (P8) — restore then:
+  // { label: "Profile", href: "/profile", icon: User },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

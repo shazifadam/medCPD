@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { signInSchema, type SignInInput } from "@/lib/schemas";
 import { signInAction, type SignInState } from "@/app/(auth)/login/actions";
 import { Button } from "@/components/ui/button";
@@ -104,8 +104,15 @@ export function LoginForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Signing in…" : "Sign in"}
+        <Button type="submit" className="w-full" disabled={pending} aria-busy={pending}>
+          {pending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Signing you in…
+            </>
+          ) : (
+            "Sign in"
+          )}
         </Button>
 
         {/* Stacked per Figma 294:1459 (2026-07-04) */}
