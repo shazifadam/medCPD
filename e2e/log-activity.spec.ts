@@ -47,6 +47,56 @@ async function pickDate(page: Page) {
     .click();
 }
 
+test("LA1/LA2 — the longest activity type doesn't overflow the dialog", async ({
+  page,
+}) => {
+  await openDialog(page);
+  // Longest label in the rate book — it used to widen the grid column past
+  // the dialog and spill every field out of the panel.
+  await page.getByLabel("Activity type").click();
+  await page.getByRole("option", { name: /Institutional CME/ }).click();
+
+  const fits = async () =>
+    page.getByRole("dialog").evaluate((d) => {
+      const trigger = d.querySelector("[role=combobox]") as HTMLElement | null;
+      return {
+        dialogOverflow: d.scrollWidth - d.clientWidth,
+        triggerOverflow: trigger
+          ? trigger.scrollWidth - trigger.clientWidth
+          : 0,
+      };
+    });
+
+  expect(await fits()).toEqual({ dialogOverflow: 0, triggerOverflow: 0 });
+  await page.getByRole("button", { name: "Continue" }).click();
+  expect(await fits()).toEqual({ dialogOverflow: 0, triggerOverflow: 0 });
+});
+
+test("LA1 — picking a type collapses the cards to its own category", async ({
+  page,
+}) => {
+  await openDialog(page);
+
+  // All four choices up front…
+  await expect(page.getByRole("button", { name: /^Cat 1 / })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Cat 4 / })).toBeVisible();
+
+  // …until a type is chosen, which implies exactly one category
+  await page.getByLabel("Activity type").click();
+  await page
+    .getByRole("option", { name: /Scientific meeting \/ conference/ })
+    .click();
+  const implied = page.getByTestId("implied-category");
+  await expect(implied).toBeVisible();
+  await expect(implied).toContainText("Cat 1");
+  for (const cat of ["Cat 2", "Cat 3", "Cat 4"]) {
+    await expect(
+      page.getByRole("button", { name: new RegExp(`^${cat} `) })
+    ).toHaveCount(0);
+  }
+  await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
+});
+
 test("LA1→LA7 happy path — Cat 2 entry lands pending on the dashboard", async ({
   page,
 }) => {

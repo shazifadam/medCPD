@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import {
   approveApplicantAction,
   rejectApplicantAction,
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { GRANTABLE_ROLES, DEFAULT_GRANT_ROLE } from "@/lib/roles";
 
 const REJECTION_REASONS = [
   "Registration could not be verified with MMDC",
@@ -34,7 +35,11 @@ const REJECTION_REASONS = [
   "Other",
 ];
 
-/** RA3 — approve confirm (role + starting cycle are fixed in v1). */
+/**
+ * RA3 — approve confirm. The role is chosen here (defaults to practitioner);
+ * the starting cycle is shown as information because there is exactly one
+ * current cycle and approval doesn't record a per-practitioner cycle.
+ */
 export function ApproveDialog({
   applicantId,
   applicantName,
@@ -53,10 +58,12 @@ export function ApproveDialog({
     error: null,
   });
   const [pending, startTransition] = useTransition();
+  const [role, setRole] = useState<string>(DEFAULT_GRANT_ROLE);
+  const selectedRole = GRANTABLE_ROLES.find((r) => r.key === role);
 
   function confirm() {
     startTransition(async () => {
-      const result = await approveApplicantAction(applicantId);
+      const result = await approveApplicantAction(applicantId, role);
       setState(result);
       if (result.status === "success") {
         setOpen(false);
@@ -82,26 +89,39 @@ export function ApproveDialog({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 rounded-md bg-muted px-4 py-3 text-sm">
-            <span className="text-muted-foreground">Grants</span>
+            <span className="shrink-0 text-muted-foreground">Grants</span>
             <span className="text-foreground">
-              Practitioner role · full access to the CPD portal
+              {selectedRole?.label} role · {selectedRole?.grants}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-medium text-foreground">Assign role</span>
-              <div className="flex h-10 items-center rounded-md border border-input px-3 text-foreground">
-                Practitioner
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-medium text-foreground">
-                Starting cycle
-              </span>
-              <div className="flex h-10 items-center rounded-md border border-input px-3 text-foreground">
-                {cycleName ?? "Current cycle"}
-              </div>
-            </div>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <label
+              htmlFor="assign-role"
+              className="font-medium text-foreground"
+            >
+              Assign role
+            </label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="assign-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GRANTABLE_ROLES.map((r) => (
+                  <SelectItem key={r.key} value={r.key}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* One cycle exists and it's the current one — information, not a
+              choice. Turn this into a select if/when the approval records a
+              starting cycle per practitioner. */}
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">Starting cycle</span>
+            <span className="font-medium text-foreground">
+              {cycleName ?? "Current cycle"}
+            </span>
           </div>
           <p className="rounded-md bg-accent px-4 py-2.5 text-sm text-primary">
             The applicant will receive a welcome email and can sign in
@@ -118,6 +138,9 @@ export function ApproveDialog({
             Cancel
           </Button>
           <Button onClick={confirm} disabled={pending}>
+            {pending && (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            )}
             {pending ? "Approving…" : "Approve & grant access"}
           </Button>
         </DialogFooter>
@@ -226,6 +249,9 @@ export function RejectDialog({
             onClick={confirm}
             disabled={pending || !reason}
           >
+            {pending && (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            )}
             {pending ? "Rejecting…" : "Reject application"}
           </Button>
         </DialogFooter>

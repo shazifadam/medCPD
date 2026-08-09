@@ -29,6 +29,8 @@ export function CategoryStep({
   onPickCategory: (code: string) => void;
   onPickType: (id: string) => void;
 }) {
+  const chosenType = options.find((o) => o.id === activityTypeId);
+
   // One card per category, in seed display order.
   const categories = options.reduce<
     { code: string; label: string; shortName: string }[]
@@ -63,7 +65,26 @@ export function CategoryStep({
         </Select>
       </div>
 
-      {categories.map((c) => {
+      {/* A chosen activity type already implies its category — show that one
+          as information rather than three irrelevant choices (user directive
+          2026-07-31). Clearing the type brings the full set back. */}
+      {chosenType ? (
+        <div
+          className="flex w-full items-center gap-3 border-[1.5px] border-primary bg-accent px-3.5 py-3"
+          data-testid="implied-category"
+        >
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-sm font-medium text-foreground">
+              {chosenType.categoryLabel}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {chosenType.categoryShortName}
+            </span>
+          </span>
+          <CircleCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        </div>
+      ) : (
+        categories.map((c) => {
         const selected = c.code === categoryCode;
         return (
           <button
@@ -91,7 +112,8 @@ export function CategoryStep({
             )}
           </button>
         );
-      })}
+        })
+      )}
     </div>
   );
 }

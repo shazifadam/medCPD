@@ -76,7 +76,9 @@ export async function getMyCpdData(practitionerId: string): Promise<MyCpdData> {
     >`
       select
         e.id,
-        e.title,
+        -- Event-derived entries carry no title (it lives on the event) —
+        -- fall back so the ledger never reads "(untitled entry)".
+        coalesce(e.title, ev.title) as title,
         cc.code as category_code,
         -- Event-derived entries carry no occurred_on (schema CHECK) — fall
         -- back to the event date so date rendering never sees null.
@@ -144,7 +146,7 @@ export async function getRecentEntries(
       status: EntryStatus;
     }[]
   >`
-    select e.id, e.title, cc.code as category_code,
+    select e.id, coalesce(e.title, ev.title) as title, cc.code as category_code,
            coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)
              as occurred_on,
            e.credits, e.status
@@ -195,6 +197,9 @@ export interface EntryDetail {
   description: string | null;
   reviewedAt: string | null;
   reviewComments: string | null;
+  /** Where the entry came from — event-derived entries can't be withdrawn. */
+  source: "self_reported" | "event_attendance";
+  eventTitle: string | null;
   attachments: EntryAttachment[];
 }
 
@@ -218,17 +223,20 @@ export async function getEntryDetail(
       description: string | null;
       reviewed_at: string | null;
       review_comments: string | null;
+      source: "self_reported" | "event_attendance";
+      event_title: string | null;
     }[]
   >`
     select
-      e.id, e.title, e.status,
+      e.id, coalesce(e.title, ev.title) as title, e.status,
       cc.code as category_code,
       at.name as activity_type_name,
       at.calculation_method,
       coalesce(e.occurred_on, ev.starts_at::date, e.created_at::date)
         as occurred_on,
       e.hours, e.sessions, e.credits, e.description,
-      e.reviewed_at, e.review_comments
+      e.reviewed_at, e.review_comments,
+      e.source, ev.title as event_title
     from cpd_entries e
     join credit_categories cc on cc.id = e.category_id
     join activity_types at on at.id = e.activity_type_id
@@ -270,6 +278,8 @@ export async function getEntryDetail(
     description: row.description,
     reviewedAt: isoDate(row.reviewed_at),
     reviewComments: row.review_comments,
+    source: row.source,
+    eventTitle: row.event_title,
     attachments: attachments.map((a) => ({
       id: a.id,
       filename: a.filename,

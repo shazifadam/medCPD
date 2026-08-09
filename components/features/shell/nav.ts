@@ -42,6 +42,11 @@ const PRACTITIONER_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Approvals", href: "/admin/approvals", icon: CircleCheck },
+  {
+    label: "Committee approvals",
+    href: "/committee/entries",
+    icon: ClipboardList,
+  },
   { label: "Organizations", href: "/admin/organizations", icon: Globe },
   { label: "Manage events", href: "/admin/events", icon: Calendar },
   { label: "Framework", href: "/admin/framework", icon: SlidersHorizontal },
@@ -75,7 +80,13 @@ export function navGroupsForRoles(roles: Role[]): NavGroup[] {
     groups.push({ heading: "CPD Committee", items: COMMITTEE_ITEMS });
   }
   if (roles.includes("mma_admin")) {
-    groups.push({ heading: "Administration", items: ADMIN_ITEMS });
+    // The committee group is hidden from admins who aren't committee members,
+    // which left the entry-review queue reachable only from the OD1 overview.
+    // Drop the shortcut for anyone who already has the committee group.
+    const items = roles.includes("cpd_committee")
+      ? ADMIN_ITEMS.filter((i) => i.href !== "/committee/entries")
+      : ADMIN_ITEMS;
+    groups.push({ heading: "Administration", items });
   }
   return groups;
 }

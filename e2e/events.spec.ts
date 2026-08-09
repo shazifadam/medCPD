@@ -34,6 +34,24 @@ test.beforeAll(async () => {
       delete from event_registrations
       where practitioner_id in (select id from profiles where email = ${EMAIL})
     `;
+    // Anyone browsing the app can check in to these seeded events (a human
+    // clicking around, another spec's user), leaving entries that reference
+    // the accreditation. Clear those first or the wipe below hits the FK.
+    await sql`
+      delete from cpd_entries
+      where accreditation_id in
+        (select id from event_accreditations where event_id in
+          (select id from events where slug in (${SLUG_A}, ${SLUG_B})))
+         or event_id in (select id from events where slug in (${SLUG_A}, ${SLUG_B}))
+    `;
+    await sql`
+      delete from event_attendances where event_id in
+        (select id from events where slug in (${SLUG_A}, ${SLUG_B}))
+    `;
+    await sql`
+      delete from event_registrations where event_id in
+        (select id from events where slug in (${SLUG_A}, ${SLUG_B}))
+    `;
     await sql`delete from event_credit_allocations where accreditation_id in
       (select id from event_accreditations where event_id in
         (select id from events where slug in (${SLUG_A}, ${SLUG_B})))`;
@@ -151,6 +169,18 @@ test("AT1→AT3 — check-in awards the pending credit entry", async ({
   await expect(page.getByText("+2 CPD credits awarded")).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByText("Checked in", { exact: true })).toBeVisible();
+
+  // EN4 — the derived entry explains itself and offers NO withdraw (the
+  // withdraw action only deletes self-reported rows, so the button was dead).
+  await page.goto("/my-cpd");
+  await page.getByRole("link", { name: /E2E External CME Evening/ }).click();
+  await expect(page.getByText("Awaiting review")).toBeVisible();
+  await expect(
+    page.getByText("come from your verified attendance", { exact: false })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Withdraw/ })
+  ).toHaveCount(0);
 
   // DB: verified attendance + pending event-derived entry with provenance
   const sql = connectDb();

@@ -1,6 +1,16 @@
 # Current State
 
-**Snapshot date:** 2026-07-27 (P7 ✅ COMPLETE — certificates + PDF + public verify, e2e 74 green, unit 16/16, pushed — P8 polish next)
+**Snapshot date:** 2026-08-09 (LAUNCH INFRA ✅ — Resend email + Vercel production deploy LIVE at https://cpd.medicalmv.com; P8 polish still pending)
+
+## ▶ RESUME HERE — 2026-08-09 (launch infra live; next: tester-prep tasks + P8)
+
+**Registration blocker root-caused & fixed (2026-08-08 → 09):**
+- 🔴 Live registration failed because auth email still used Supabase's **built-in mailer**: `rate_limit_email_sent: 2`/hour project-wide (reproduced: 1st OTP signup 200, 2nd seconds later → 429 `over_email_send_rate_limit`); built-in mailer also rejects undeliverable domains (`email_address_invalid`). Signup UI collapses every error to a generic message, so the real cause was invisible. e2e never caught it — the signup spec is UI-only. Code itself healthy: auth+smoke e2e 22/22 green 2026-08-08.
+- ✅ **Resend SMTP live:** sending domain `cpd.medicalmv.com` verified (DNS at Bluehost: MX+SPF on `send.cpd`, DKIM on `resend._domainkey.cpd`, region ap-northeast-1). Supabase auth SMTP patched via Management API → smtp.resend.com:465, sender `Gradus CPD <noreply@cpd.medicalmv.com>`, rate limit 2→**60/h**, site_url `https://cpd.medicalmv.com`, allow-list = localhost + prod. Back-to-back live signups both 200; test users cleaned up. `.env.local` RESEND_API_KEY + EMAIL_FROM updated.
+- ✅ **Vercel production deploy:** project `cpd4/gradus-cpd` (Vercel account `adminmedicalassociation-1244`), GitHub `shazifadam/medCPD` auto-connected (pushes to main auto-deploy), 9 prod env vars set (NEXT_PUBLIC_APP_URL=https://cpd.medicalmv.com), domain attached, SSL issued. **Live check:** `/` 307→`/login`, title "Sign in · Gradus".
+- ⚠️ Open DNS nit: `_dmarc.cpd` TXT is malformed (`=DMARC1; p=none;` — missing leading `v`), user to fix in Bluehost.
+
+**Next (tester prep, agreed plan):** `scripts/reset-test-data` wipe (keep framework seeds + hussain.shaxif002@gmail.com only; e2e users regenerate via global-setup), branded auth email templates + switch to token_hash `/auth/confirm` (kills PKCE same-browser landmine for real testers), signup error-message surfacing (rate-limit / invalid-email specifics), Supabase keep-alive cron on Vercel (free tier pauses after ~1 week idle). Then P8 polish (see 2026-07-27 section).
 
 ## (superseded) P6 snapshot — 2026-07-19
 

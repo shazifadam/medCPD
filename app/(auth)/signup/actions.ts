@@ -1,6 +1,7 @@
 "use server";
 
 import { signUpSchema } from "@/lib/schemas";
+import { formatPhone, DEFAULT_DIAL_CODE } from "@/lib/phone";
 import { auth } from "@/lib/auth";
 import { sql } from "@/lib/db";
 
@@ -19,10 +20,17 @@ export async function signUpAction(
     mmdcRegistration: formData.get("mmdcRegistration"),
     mmdcRegistrationType: formData.get("mmdcRegistrationType"),
     email: formData.get("email"),
+    // Missing code (older client bundle / no JS) = Maldives, never a failure.
+    phoneDialCode: formData.get("phoneDialCode") || DEFAULT_DIAL_CODE,
     phone: formData.get("phone"),
   });
   if (!parsed.success) {
-    // Client validation (shared schema) should catch this first.
+    // Client validation (shared schema) should catch this first — if we land
+    // here the two sides disagree, so name the fields in the server log.
+    console.error(
+      "[signup] validation failed:",
+      JSON.stringify(parsed.error.flatten().fieldErrors)
+    );
     return { status: "error", error: "Please correct the highlighted fields." };
   }
   const input = parsed.data;
@@ -49,7 +57,8 @@ export async function signUpAction(
     input.email,
     {
       full_name: input.fullName,
-      phone: input.phone,
+      // Country code + national digits joined for storage: "+960 7771234"
+      phone: formatPhone(input.phoneDialCode, input.phone),
       mmdc_registration: input.mmdcRegistration,
       mmdc_registration_type: input.mmdcRegistrationType,
     },

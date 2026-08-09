@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { logActivitySchema, type LogActivityInput } from "@/lib/schemas";
 import type { ActivityTypeOption } from "@/lib/activities";
 import {
@@ -106,10 +106,16 @@ export function LogActivityDialog({
   }
 
   const success = state.status === "success";
-  // LA5 — callout on failed client validation or server error.
+  // LA5 — callout on failed client validation or server error. Driven by the
+  // actual error map, not formState.isValid: isValid lags a successful submit
+  // by a render, which flashed the error callout for the whole upload.
+  // Never shown while the submission is in flight.
   const showError =
-    state.status === "error" ||
-    (step === 2 && form.formState.submitCount > 0 && !form.formState.isValid);
+    !pending &&
+    (state.status === "error" ||
+      (step === 2 &&
+        form.formState.submitCount > 0 &&
+        Object.keys(form.formState.errors).length > 0));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -198,6 +204,12 @@ export function LogActivityDialog({
                       Cancel
                     </Button>
                     <Button type="submit" disabled={pending}>
+                      {pending && (
+                        <Loader2
+                          className="mr-1.5 h-4 w-4 animate-spin"
+                          aria-hidden
+                        />
+                      )}
                       {pending ? "Submitting…" : "Submit for review"}
                     </Button>
                   </DialogFooter>

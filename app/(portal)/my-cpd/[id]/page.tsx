@@ -150,12 +150,27 @@ export default async function EntryDetailPage({
                 <Clock className="h-4 w-4" aria-hidden />
                 Awaiting review
               </p>
-              <p className="text-sm text-muted-foreground">
-                Your entry is in the review queue.
-              </p>
-              <div className="border-t border-border pt-4">
-                <WithdrawButton entryId={entry.id} />
-              </div>
+              {entry.source === "event_attendance" ? (
+                <p className="text-sm text-muted-foreground">
+                  These credits come from your verified attendance at{" "}
+                  {entry.eventTitle ?? "an accredited event"}. The CPD committee
+                  confirms them before they count toward your cycle — an
+                  attendance record can&apos;t be withdrawn. Contact the MMA
+                  secretariat if something looks wrong.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Your entry is in the review queue.
+                  </p>
+                  <div className="border-t border-border pt-4">
+                    {/* Withdraw hard-deletes a pending SELF-REPORTED entry —
+                        the action ignores event-derived rows, so offering the
+                        button there was a no-op. */}
+                    <WithdrawButton entryId={entry.id} />
+                  </div>
+                </>
+              )}
             </>
           )}
 

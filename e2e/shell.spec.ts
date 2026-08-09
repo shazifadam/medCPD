@@ -47,6 +47,20 @@ test.describe("Admin shell (OD1)", () => {
     await expect(page.getByText("EA", { exact: true })).toBeVisible();
   });
 
+  test("Administration links straight to the entry-review queue", async ({
+    page,
+  }) => {
+    // An admin without the committee role sees no CPD Committee group, so
+    // this shortcut is their only sidebar route to the entry approvals.
+    await page.goto("/admin");
+    const nav = page.getByRole("navigation");
+    await nav.getByRole("link", { name: "Committee approvals" }).click();
+    await page.waitForURL("**/committee/entries");
+    await expect(
+      page.getByRole("heading", { name: /Entry reviews|Entries/ })
+    ).toBeVisible();
+  });
+
   test("has no serious/critical a11y violations", async ({ page }) => {
     await page.goto("/admin");
     const results = await new AxeBuilder({ page }).analyze();

@@ -36,11 +36,15 @@ export async function listEntryReviews(): Promise<ReviewQueueRow[]> {
       status: EntryStatus;
     }[]
   >`
-    select e.id, e.title, p.full_name, p.mmdc_registration,
+    -- Event-derived entries carry no title of their own (it lives on the
+    -- event) — fall back so the queue never reads "(untitled entry)".
+    select e.id, coalesce(e.title, ev.title) as title,
+           p.full_name, p.mmdc_registration,
            cc.code as category_code, e.credits, e.submitted_at, e.status
     from cpd_entries e
     join profiles p on p.id = e.practitioner_id
     join credit_categories cc on cc.id = e.category_id
+    left join events ev on ev.id = e.event_id
     order by (e.status = 'pending') desc, e.submitted_at desc
   `;
   return rows.map((r) => ({
@@ -115,7 +119,7 @@ export async function getReviewEntryDetail(
     }[]
   >`
     select
-      e.id, e.title, e.status, e.description,
+      e.id, coalesce(e.title, ev.title) as title, e.status, e.description,
       at.name as activity_type_name,
       cc.id as category_id,
       cc.name as category_name,
@@ -133,6 +137,7 @@ export async function getReviewEntryDetail(
     join profiles p on p.id = e.practitioner_id
     join credit_categories cc on cc.id = e.category_id
     join activity_types at on at.id = e.activity_type_id
+    left join events ev on ev.id = e.event_id
     left join cpd_cycles cy on cy.id = e.cycle_id
     left join practitioner_specialties ps
       on ps.practitioner_id = p.id and ps.is_primary

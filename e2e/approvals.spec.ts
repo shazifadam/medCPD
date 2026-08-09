@@ -98,6 +98,13 @@ test("RA2→RA3 — approving grants the practitioner role", async ({ page }) =>
   await expect(
     page.getByText("Practitioner role · full access to the CPD portal")
   ).toBeVisible();
+
+  // RA3: role is a real selector defaulting to Practitioner; the single
+  // active cycle is shown as information, not an input.
+  const roleSelect = page.getByRole("dialog").getByLabel("Assign role");
+  await expect(roleSelect).toHaveText("Practitioner");
+  await expect(page.getByRole("dialog")).toContainText("Starting cycle");
+  await expect(page.getByRole("dialog")).toContainText("2026–2027 cycle");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Approve & grant access" })

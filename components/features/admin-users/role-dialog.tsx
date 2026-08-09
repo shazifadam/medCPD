@@ -18,16 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const ROLES: { key: string; label: string; hint: string }[] = [
-  { key: "practitioner", label: "Practitioner", hint: "Log CPD, attend events" },
-  { key: "organizer", label: "Organizer", hint: "Create and run events" },
-  {
-    key: "cpd_committee",
-    label: "CPD Committee",
-    hint: "Review entries and accredit events",
-  },
-  { key: "mma_admin", label: "Super Admin", hint: "Full system access" },
-];
+import { GRANTABLE_ROLES as ROLES } from "@/lib/roles";
 
 /** UM3 — grant / revoke roles for a user. */
 export function RoleDialog({

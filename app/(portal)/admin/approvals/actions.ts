@@ -3,19 +3,28 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole } from "@/lib/auth/identity";
+import { DEFAULT_GRANT_ROLE, isGrantableRole } from "@/lib/roles";
 
 export type ApprovalActionState = {
   status: "idle" | "success" | "error";
   error: string | null;
 };
 
-/** RA3 — approve: verify the profile and grant the practitioner role. */
+/**
+ * RA3 — approve: verify the profile and grant the selected role
+ * (practitioner unless the admin picks another in the dialog).
+ */
 export async function approveApplicantAction(
-  applicantId: string
+  applicantId: string,
+  role: string = DEFAULT_GRANT_ROLE
 ): Promise<ApprovalActionState> {
   const identity = await getIdentity();
   if (!identity || !hasRole(identity, "mma_admin")) {
     return { status: "error", error: "Not authorized." };
+  }
+  // Never trust the client with an enum value that reaches SQL.
+  if (!isGrantableRole(role)) {
+    return { status: "error", error: "Unknown role." };
   }
 
   const updated = await sql<{ id: string }[]>`
@@ -33,11 +42,11 @@ export async function approveApplicantAction(
 
   await sql`
     insert into role_assignments (user_id, role, granted_by)
-    select ${applicantId}, 'practitioner'::user_role, ${identity.user.id}
+    select ${applicantId}, ${role}::user_role, ${identity.user.id}
     where not exists (
       select 1 from role_assignments
       where user_id = ${applicantId}
-        and role = 'practitioner'::user_role
+        and role = ${role}::user_role
         and revoked_at is null
     )
   `;

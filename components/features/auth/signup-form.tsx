@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { signUpSchema, type SignUpInput } from "@/lib/schemas";
 import { signUpAction, type SignUpState } from "@/app/(auth)/signup/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/patterns/phone-input";
+import { DEFAULT_DIAL_CODE } from "@/lib/phone";
 import {
   Select,
   SelectContent,
@@ -51,9 +53,19 @@ export function SignUpForm({
       mmdcRegistration: "",
       mmdcRegistrationType: undefined,
       email: "",
+      phoneDialCode: DEFAULT_DIAL_CODE,
       phone: "",
     },
   });
+
+  // Self-heal a missing dial code (e.g. a form mounted from an older bundle):
+  // it has no visible field of its own, so an empty value would fail
+  // validation with nothing highlighted.
+  useEffect(() => {
+    if (!form.getValues("phoneDialCode")) {
+      form.setValue("phoneDialCode", DEFAULT_DIAL_CODE);
+    }
+  }, [form]);
 
   function onSubmit(values: SignUpInput) {
     startTransition(async () => {
@@ -89,9 +101,14 @@ export function SignUpForm({
   }
 
   // AU4 — top callout on server error or failed client validation
+  // Driven by the error map rather than formState.isValid (which lags a
+  // successful submit by a render) and hidden while the request is in flight,
+  // so a slow signup can't flash "Check your details" before succeeding.
   const showCallout =
-    state.status === "error" ||
-    (form.formState.submitCount > 0 && !form.formState.isValid);
+    !pending &&
+    (state.status === "error" ||
+      (form.formState.submitCount > 0 &&
+        Object.keys(form.formState.errors).length > 0));
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -204,6 +221,9 @@ export function SignUpForm({
               )}
             />
 
+            {/* Revealed by the type radio (user directive 2026-07-31) —
+                nothing to type into until PMR/TMR is chosen. */}
+            {form.watch("mmdcRegistrationType") && (
             <FormField
               control={form.control}
               name="mmdcRegistration"
@@ -231,6 +251,7 @@ export function SignUpForm({
                 </FormItem>
               )}
             />
+            )}
 
             <FormField
               control={form.control}
@@ -258,19 +279,37 @@ export function SignUpForm({
                 <FormItem>
                   <FormLabel>Contact number</FormLabel>
                   <FormControl>
-                    <Input
-                      type="tel"
-                      placeholder="+960 …"
-                      autoComplete="tel"
-                      {...field}
+                    <PhoneInput
+                      placeholder="7771234"
+                      dialCode={form.watch("phoneDialCode") ?? DEFAULT_DIAL_CODE}
+                      onDialCodeChange={(dial) =>
+                        form.setValue("phoneDialCode", dial, {
+                          shouldValidate: form.formState.isSubmitted,
+                        })
+                      }
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
                     />
                   </FormControl>
+                  {/* The code selector has no FormItem of its own — surface
+                      its error here so no field can fail invisibly. */}
+                  {form.formState.errors.phoneDialCode && (
+                    <p className="text-sm font-medium text-destructive">
+                      {form.formState.errors.phoneDialCode.message}
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <Button type="submit" className="w-full" disabled={pending}>
+              {pending && (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+              )}
               {pending ? "Creating account…" : "Create account"}
             </Button>
 

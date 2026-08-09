@@ -26,6 +26,9 @@ test.describe("AU3 — sign up, form", () => {
     await expect(page.getByLabel("Field / specialty")).toBeVisible();
     await expect(page.getByRole("radio", { name: "PMR" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "TMR" })).toBeVisible();
+    // Number field is revealed by the type radio, not shown up front
+    await expect(page.getByLabel("Registration number")).toHaveCount(0);
+    await page.getByRole("radio", { name: "PMR" }).click();
     await expect(page.getByLabel("Registration number")).toBeVisible();
     await expect(page.getByLabel("Registration number")).toHaveAttribute(
       "placeholder",
@@ -54,11 +57,14 @@ test.describe("AU3 — sign up, form", () => {
     page,
   }) => {
     await page.goto("/signup");
+
+    // Hidden until a type is chosen
+    await expect(page.getByLabel("Registration number")).toHaveCount(0);
+    await page.getByRole("radio", { name: "PMR" }).click();
+
     const numberField = page
       .getByLabel("Registration number")
       .locator("xpath=ancestor::div[1]");
-
-    // Default prefix per the frame
     await expect(numberField.getByText("PMR", { exact: true })).toBeVisible();
 
     // Switching the radio switches the prefix
@@ -66,6 +72,28 @@ test.describe("AU3 — sign up, form", () => {
     await expect(numberField.getByText("TMR", { exact: true })).toBeVisible();
     await page.getByRole("radio", { name: "PMR" }).click();
     await expect(numberField.getByText("PMR", { exact: true })).toBeVisible();
+  });
+
+  test("contact number defaults to +960 and swaps via the code selector", async ({
+    page,
+  }) => {
+    await page.goto("/signup");
+    const codeTrigger = page.getByRole("combobox", { name: /Country code/ });
+
+    // Locked to Maldives by default (user directive 2026-07-31)
+    await expect(codeTrigger).toContainText("+960");
+
+    // Digits typed beside it; letters are dropped
+    const number = page.getByLabel("Contact number");
+    await number.fill("777abc1234");
+    await expect(number).toHaveValue("7771234");
+
+    // Switching the code keeps the typed digits
+    await codeTrigger.click();
+    await page.getByPlaceholder("Search country or code").fill("India");
+    await page.getByRole("option", { name: /India/ }).click();
+    await expect(codeTrigger).toContainText("+91");
+    await expect(number).toHaveValue("7771234");
   });
 
   test("has no serious/critical a11y violations", async ({ page }) => {
@@ -100,13 +128,23 @@ test.describe("AU4 — sign up, validation error (negative)", () => {
       })
     ).toBeVisible();
     await expect(
-      page.getByText("Enter a valid PMR/TMR number")
-    ).toBeVisible();
-    await expect(
       page.getByText("Select your registration type")
     ).toBeVisible();
+    // No type chosen → no number field on screen, so no error for it either
+    await expect(
+      page.getByText("Enter a valid PMR/TMR number")
+    ).toHaveCount(0);
     await expect(page.getByText("Enter a valid email address")).toBeVisible();
     await expect(page.getByText("Enter a valid contact number")).toBeVisible();
+  });
+
+  test("revealed number field is required once a type is chosen", async ({
+    page,
+  }) => {
+    await page.goto("/signup");
+    await page.getByRole("radio", { name: "PMR" }).click();
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByText("Enter a valid PMR/TMR number")).toBeVisible();
   });
 
   test("bad email + bad phone rejected client-side", async ({ page }) => {
