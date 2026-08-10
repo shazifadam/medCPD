@@ -46,7 +46,8 @@ test.describe("committee verifies an organization", () => {
   test("Verify flips the status", async ({ page }) => {
     await page.goto("/organizations");
 
-    await page.getByRole("button", { name: `Verify ${ORG}` }).click();
+    await page.getByRole("button", { name: `Actions for ${ORG}` }).click();
+    await page.getByRole("menuitem", { name: "Verify organization" }).click();
     await expect(page.getByText(`Verify ${ORG}?`)).toBeVisible();
     await page.getByRole("button", { name: "Verify organization" }).click();
 
@@ -67,10 +68,11 @@ test.describe("committee verifies an organization", () => {
     page,
   }) => {
     await page.goto("/organizations");
-    await page.getByRole("button", { name: `Archive ${ORG}`, exact: true }).click();
+    await page.getByRole("button", { name: `Actions for ${ORG}`, exact: true }).click();
+    await page.getByRole("menuitem", { name: "Archive" }).click();
     await page.getByRole("button", { name: "Archive organization" }).click();
     await expect(
-      page.getByRole("button", { name: `Archive ${ORG}`, exact: true })
+      page.getByRole("button", { name: `Actions for ${ORG}`, exact: true })
     ).toHaveCount(0);
 
     const sql = connectDb();
@@ -81,9 +83,10 @@ test.describe("committee verifies an organization", () => {
     expect(org.is_active).toBe(false);
 
     await page.goto("/organizations?show=archived");
-    await page.getByRole("button", { name: `Restore ${ORG}` }).click();
+    await page.getByRole("button", { name: `Actions for ${ORG}`, exact: true }).click();
+    await page.getByRole("menuitem", { name: "Restore" }).click();
     await expect(
-      page.getByRole("button", { name: `Restore ${ORG}` })
+      page.getByRole("button", { name: `Actions for ${ORG}`, exact: true })
     ).toHaveCount(0);
     const sql2 = connectDb();
     const [back] = await sql2<{ is_active: boolean }[]>`
@@ -95,16 +98,20 @@ test.describe("committee verifies an organization", () => {
 
   test("edit renames the organization", async ({ page }) => {
     await page.goto("/organizations");
-    await page.getByRole("button", { name: `Edit ${ORG}`, exact: true }).click();
+    await page.getByRole("button", { name: `Actions for ${ORG}`, exact: true }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
     const nameInput = page.getByRole("textbox", { name: "Name", exact: true });
     await nameInput.fill(`${ORG} Renamed`);
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText(`${ORG} Renamed`)).toBeVisible();
     // rename back so afterAll cleanup by name still matches
-    await page.getByRole("button", { name: `Edit ${ORG} Renamed` }).click();
+    await page.getByRole("button", { name: `Actions for ${ORG} Renamed` }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
     await page.getByRole("textbox", { name: "Name", exact: true }).fill(ORG);
     await page.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByRole("button", { name: `Edit ${ORG}`, exact: true })).toBeVisible();
+    await expect(
+      page.getByText(ORG, { exact: true })
+    ).toBeVisible();
   });
 
   test("organizations page has no serious a11y violations", async ({

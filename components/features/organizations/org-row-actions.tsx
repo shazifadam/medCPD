@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreHorizontal } from "lucide-react";
 import {
+  verifyOrganizationAction,
   updateOrganizationAction,
   archiveOrganizationAction,
   restoreOrganizationAction,
@@ -12,24 +13,40 @@ import { ORG_TYPE_OPTIONS } from "@/lib/org-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
-/** Edit + archive/restore actions per organization row (admin + committee). */
+/**
+ * Per-row organization actions behind a ⋯ menu (design-system dropdown):
+ * Verify (unverified only) · Edit · Archive — or Restore when archived.
+ */
 export function OrgRowActions({
   org,
 }: {
-  org: { id: string; name: string; type: string; isActive: boolean };
+  org: {
+    id: string;
+    name: string;
+    type: string;
+    isActive: boolean;
+    isVerified: boolean;
+  };
 }) {
   const router = useRouter();
-  const [editOpen, setEditOpen] = useState(false);
-  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [dialog, setDialog] = useState<"verify" | "edit" | "archive" | null>(
+    null
+  );
   const [name, setName] = useState(org.name);
   const [type, setType] = useState(org.type);
   const [error, setError] = useState<string | null>(null);
@@ -42,35 +59,107 @@ export function OrgRowActions({
         setError(result.error);
         return;
       }
-      setEditOpen(false);
-      setArchiveOpen(false);
+      setDialog(null);
       setError(null);
       router.refresh();
     });
   }
 
-  if (!org.isActive) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={pending}
-        aria-label={`Restore ${org.name}`}
-        onClick={() => run(() => restoreOrganizationAction(org.id))}
-      >
-        Restore
-      </Button>
-    );
+  function closeDialog(open: boolean) {
+    if (!open) {
+      setDialog(null);
+      setError(null);
+    }
   }
 
+  const spinner = (label: string, busy: string) =>
+    pending ? (
+      <>
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        {busy}
+      </>
+    ) : (
+      label
+    );
+
   return (
-    <div className="flex gap-2">
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" aria-label={`Edit ${org.name}`}>
-            Edit
+    <>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={`Actions for ${org.name}`}
+          >
+            <MoreHorizontal className="h-4 w-4" aria-hidden />
           </Button>
-        </DialogTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {org.isActive ? (
+            <>
+              {!org.isVerified && (
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setDialog("verify"); }}>
+                  Verify organization
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setDialog("edit"); }}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setDialog("archive"); }}
+              >
+                Archive
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem
+              onSelect={() => run(() => restoreOrganizationAction(org.id))}
+            >
+              Restore
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Verify */}
+      <Dialog open={dialog === "verify"} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify {org.name}?</DialogTitle>
+            <DialogDescription>
+              Marks this organization as a verified provider. Verified status
+              is shown wherever the organization appears (events, workplaces,
+              provider lists).
+            </DialogDescription>
+          </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm text-status-rejected">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={pending}
+              onClick={() => setDialog(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={pending}
+              aria-busy={pending}
+              onClick={() => run(() => verifyOrganizationAction(org.id))}
+            >
+              {spinner("Verify organization", "Verifying…")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit */}
+      <Dialog open={dialog === "edit"} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit organization</DialogTitle>
@@ -82,7 +171,10 @@ export function OrgRowActions({
               </p>
             )}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`edit-name-${org.id}`} className="text-sm font-medium">
+              <label
+                htmlFor={`edit-name-${org.id}`}
+                className="text-sm font-medium"
+              >
                 Name
               </label>
               <Input
@@ -92,7 +184,10 @@ export function OrgRowActions({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`edit-type-${org.id}`} className="text-sm font-medium">
+              <label
+                htmlFor={`edit-type-${org.id}`}
+                className="text-sm font-medium"
+              >
                 Type
               </label>
               <select
@@ -116,7 +211,7 @@ export function OrgRowActions({
             <Button
               variant="outline"
               disabled={pending}
-              onClick={() => setEditOpen(false)}
+              onClick={() => setDialog(null)}
             >
               Cancel
             </Button>
@@ -127,25 +222,14 @@ export function OrgRowActions({
                 run(() => updateOrganizationAction(org.id, { name, type }))
               }
             >
-              {pending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Saving…
-                </>
-              ) : (
-                "Save"
-              )}
+              {spinner("Save", "Saving…")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" aria-label={`Archive ${org.name}`}>
-            Archive
-          </Button>
-        </DialogTrigger>
+      {/* Archive */}
+      <Dialog open={dialog === "archive"} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Archive {org.name}?</DialogTitle>
@@ -165,7 +249,7 @@ export function OrgRowActions({
             <Button
               variant="outline"
               disabled={pending}
-              onClick={() => setArchiveOpen(false)}
+              onClick={() => setDialog(null)}
             >
               Cancel
             </Button>
@@ -175,18 +259,11 @@ export function OrgRowActions({
               aria-busy={pending}
               onClick={() => run(() => archiveOrganizationAction(org.id))}
             >
-              {pending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Archiving…
-                </>
-              ) : (
-                "Archive organization"
-              )}
+              {spinner("Archive organization", "Archiving…")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
