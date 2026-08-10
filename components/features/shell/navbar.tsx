@@ -51,13 +51,13 @@ export function Navbar({
           unread={bellUnread}
           markAllReadAction={markAllReadAction}
         />
-        <button
-          type="button"
+        <Link
+          href="/settings"
           aria-label="Settings"
           className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Settings className="h-5 w-5" aria-hidden />
-        </button>
+        </Link>
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

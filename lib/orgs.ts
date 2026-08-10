@@ -6,7 +6,7 @@ export async function listOrganizations(): Promise<
   { id: string; name: string }[]
 > {
   return sql<{ id: string; name: string }[]>`
-    select id, name from institutions order by name asc
+    select id, name from institutions where is_active order by name asc
   `;
 }
 

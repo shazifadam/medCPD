@@ -1,5 +1,17 @@
 # Gradus CPD — development rules
 
+## ⚠️ LIVE SYSTEM (user directive 2026-08-10)
+
+The production database at cpd.medicalmv.com is LIVE with real
+practitioners. **Never run any data sweep or wipe** — not
+`scripts/reset-test-data.ts` in any mode, not bulk deletes — unless the
+user explicitly asks in the moment. Alter existing data only on explicit
+request. For testing: create ONE test user, use the EXISTING
+organizations, and remove exactly what you created afterwards. Running
+the full e2e suite seeds 9 fixture users + domain data into this live
+DB — get the user's go-ahead before suite-wide runs; prefer targeted
+specs.
+
 ## Test gate (MANDATORY)
 
 Work proceeds in small chunks; **no chunk is done until its Playwright

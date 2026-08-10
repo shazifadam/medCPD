@@ -238,7 +238,7 @@ test("UM3 — granting and revoking a role updates assignments", async ({
 test("OG — registering an organization lists it as a provider", async ({
   page,
 }) => {
-  await page.goto("/admin/organizations");
+  await page.goto("/organizations");
   await expect(async () => {
     await page
       .getByRole("button", { name: "Register organization" })

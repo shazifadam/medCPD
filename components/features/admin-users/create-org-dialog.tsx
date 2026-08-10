@@ -26,14 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const TYPES = [
-  { key: "hospital", label: "Hospital" },
-  { key: "clinic", label: "Clinic" },
-  { key: "polyclinic", label: "Polyclinic" },
-  { key: "health_centre", label: "Health centre" },
-  { key: "ministry", label: "Ministry" },
-  { key: "other", label: "Other" },
-];
+import { ORG_TYPE_OPTIONS } from "@/lib/org-types";
+
+const TYPES = ORG_TYPE_OPTIONS;
 
 /** OG2 — register organization (compact dialog form). */
 export function CreateOrgDialog() {

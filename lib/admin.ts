@@ -160,7 +160,9 @@ export interface OrganizationRow {
   eventCount: number;
 }
 
-export async function listOrganizations(): Promise<OrganizationRow[]> {
+export async function listOrganizations(
+  includeArchived = false
+): Promise<OrganizationRow[]> {
   const rows = await sql<
     {
       id: string;
@@ -175,7 +177,7 @@ export async function listOrganizations(): Promise<OrganizationRow[]> {
         join events e on e.created_by = im.practitioner_id
         where im.institution_id = i.id) as event_count
     from institutions i
-    where i.is_active
+    where i.is_active = ${!includeArchived}
     order by i.name
   `;
   return rows.map((r) => ({

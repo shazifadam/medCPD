@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole } from "@/lib/auth/identity";
+import { ORG_TYPE_KEYS } from "@/lib/org-types";
 
 export type UserActionState = {
   status: "idle" | "success" | "error";
@@ -54,14 +55,20 @@ export async function setRoleAction(input: {
   return { status: "success", error: null };
 }
 
-/** OG2 — register an organization. */
+/** OG2 — register an organization (admin + committee). */
 export async function createOrganizationAction(input: {
   name: string;
   type: string;
 }): Promise<UserActionState> {
   const identity = await getIdentity();
-  if (!identity || !hasRole(identity, "mma_admin")) {
+  if (
+    !identity ||
+    (!hasRole(identity, "mma_admin") && !hasRole(identity, "cpd_committee"))
+  ) {
     return { status: "error", error: "Not authorized." };
+  }
+  if (!ORG_TYPE_KEYS.includes(input.type)) {
+    return { status: "error", error: "Choose a valid organization type." };
   }
   const name = input.name.trim();
   if (name.length < 2) {
@@ -73,6 +80,6 @@ export async function createOrganizationAction(input: {
     values (${name}, ${input.type}::institution_type, true, now(), ${identity.user.id})
   `;
 
-  revalidatePath("/admin/organizations");
+  revalidatePath("/organizations");
   return { status: "success", error: null };
 }
