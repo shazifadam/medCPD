@@ -3,8 +3,8 @@ import Link from "next/link";
 import { listOrganizations } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 import { ORG_TYPE_LABELS } from "@/lib/org-types";
+import { Button } from "@/components/ui/button";
 import { CreateOrgDialog } from "@/components/features/admin-users/create-org-dialog";
-import { VerifyOrgButton } from "@/components/features/organizations/verify-button";
 import { OrgRowActions } from "@/components/features/organizations/org-row-actions";
 
 export const metadata: Metadata = { title: "Organizations" };
@@ -34,12 +34,15 @@ export default async function OrganizationsPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={showArchived ? "/organizations" : "/organizations?show=archived"}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            {showArchived ? "← Active organizations" : "View archived"}
-          </Link>
+          <Button asChild variant="secondary">
+            <Link
+              href={
+                showArchived ? "/organizations" : "/organizations?show=archived"
+              }
+            >
+              {showArchived ? "Active organizations" : "View archived"}
+            </Link>
+          </Button>
           {!showArchived && <CreateOrgDialog />}
         </div>
       </div>
@@ -50,7 +53,7 @@ export default async function OrganizationsPage({
           <span className="w-32">Type</span>
           <span className="w-20">Events</span>
           <span className="w-40">Status</span>
-          <span className="w-56" aria-hidden />
+          <span className="w-16" aria-hidden />
         </div>
         {orgs.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm text-muted-foreground">
@@ -85,16 +88,14 @@ export default async function OrganizationsPage({
                   {o.isVerified ? "Accredited provider" : "Unverified"}
                 </span>
               </span>
-              <span className="flex w-56 justify-end gap-2">
-                {!showArchived && !o.isVerified && (
-                  <VerifyOrgButton institutionId={o.id} name={o.name} />
-                )}
+              <span className="flex w-16 justify-end">
                 <OrgRowActions
                   org={{
                     id: o.id,
                     name: o.name,
                     type: o.type,
                     isActive: !showArchived,
+                    isVerified: o.isVerified,
                   }}
                 />
               </span>
