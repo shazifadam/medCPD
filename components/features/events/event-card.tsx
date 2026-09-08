@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { format, isToday, parseISO } from "date-fns";
+import { formatMvt, isTodayMvt } from "@/lib/time";
 import { Building2, MapPin, Award, Users } from "lucide-react";
 import type { EventCard as EventCardData } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { RegisterDialog } from "./register-dialog";
 
 function dateLine(e: EventCardData): string {
-  const starts = parseISO(e.startsAt);
-  const ends = parseISO(e.endsAt);
-  const day = isToday(starts) ? "Today" : format(starts, "EEEE, d MMM yyyy");
-  return `${day} · ${format(starts, "HH:mm")} – ${format(ends, "HH:mm")}`;
+  const day = isTodayMvt(e.startsAt)
+    ? "Today"
+    : formatMvt(e.startsAt, "EEEE, d MMM yyyy");
+  return `${day} · ${formatMvt(e.startsAt, "HH:mm")} – ${formatMvt(e.endsAt, "HH:mm")}`;
 }
 
 /** EV1 — one browse-events card (inner summary card + meta + actions). */

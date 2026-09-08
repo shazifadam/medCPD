@@ -94,3 +94,39 @@ test("profile page has no serious a11y violations", async ({ page }) => {
   );
   expect(serious).toEqual([]);
 });
+
+test("specialty is editable on the profile (moved from signup 2026-09-08)", async ({
+  page,
+}) => {
+  await page.goto("/profile");
+  await page.getByLabel("Field / specialty").click();
+  await page.getByRole("option", { name: "General Practice" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile updated.")).toBeVisible();
+
+  const sql = connectDb();
+  const [row] = await sql<{ name: string }[]>`
+    select s.name from practitioner_specialties ps
+    join specialties s on s.id = ps.specialty_id
+    join profiles p on p.id = ps.practitioner_id
+    where p.email = ${PRACTITIONER} and ps.is_primary
+  `;
+  await sql.end();
+  expect(row?.name).toBe("General Practice");
+
+  // Re-editable: switch to another field, the primary follows.
+  await page.reload();
+  await page.getByLabel("Field / specialty").click();
+  await page.getByRole("option", { name: "Other" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile updated.")).toBeVisible();
+  const sql2 = connectDb();
+  const primaries = await sql2<{ name: string }[]>`
+    select s.name from practitioner_specialties ps
+    join specialties s on s.id = ps.specialty_id
+    join profiles p on p.id = ps.practitioner_id
+    where p.email = ${PRACTITIONER} and ps.is_primary
+  `;
+  await sql2.end();
+  expect(primaries.map((r) => r.name)).toEqual(["Other"]);
+});

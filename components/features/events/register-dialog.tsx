@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { CalendarPlus } from "lucide-react";
 import type { EventCard } from "@/lib/events";
 import {
@@ -64,7 +64,7 @@ export function RegisterDialog({ event }: { event: EventCard }) {
           <DialogTitle>Register for this event?</DialogTitle>
           <DialogDescription>
             You&apos;ll be added to the roster for {event.title} (
-            {format(parseISO(event.startsAt), "d MMM yyyy")}). Check in at the
+            {formatMvt(event.startsAt, "d MMM yyyy")}). Check in at the
             venue{creditLine ? ` to earn ${creditLine}` : ""}.
           </DialogDescription>
         </DialogHeader>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import {
   ArrowLeft,
   Award,
@@ -32,15 +32,15 @@ export default async function EventDetailPage({
   if (!event) notFound();
 
   const registered = event.myRegistrationId != null;
-  const starts = parseISO(event.startsAt);
-  const ends = parseISO(event.endsAt);
+  const starts = event.startsAt;
+  const ends = event.endsAt;
 
   const infoRows: { icon: typeof CalendarDays; label: string; value: string }[] = [
-    { icon: CalendarDays, label: "Date", value: format(starts, "d MMM yyyy") },
+    { icon: CalendarDays, label: "Date", value: formatMvt(starts, "d MMM yyyy") },
     {
       icon: Clock,
       label: "Time",
-      value: `${format(starts, "HH:mm")} – ${format(ends, "HH:mm")} MVT`,
+      value: `${formatMvt(starts, "HH:mm")} – ${formatMvt(ends, "HH:mm")} MVT`,
     },
     ...(event.venueName
       ? [{ icon: MapPin, label: "Venue", value: event.venueName }]
@@ -82,7 +82,7 @@ export default async function EventDetailPage({
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-semibold text-foreground">{event.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {[event.hostName, format(starts, "d MMM yyyy"), event.venueAddress]
+          {[event.hostName, formatMvt(starts, "d MMM yyyy"), event.venueAddress]
             .filter(Boolean)
             .join(" · ")}
         </p>
@@ -109,7 +109,7 @@ export default async function EventDetailPage({
                     className="flex gap-6 border-b border-border/60 py-3 last:border-0"
                   >
                     <span className="w-14 shrink-0 font-mono text-[13px] text-muted-foreground">
-                      {format(parseISO(s.startsAt), "HH:mm")}
+                      {formatMvt(s.startsAt, "HH:mm")}
                     </span>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm text-foreground">{s.title}</span>

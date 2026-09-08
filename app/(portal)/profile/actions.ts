@@ -18,7 +18,15 @@ export type ProfileActionState = {
 const err = (error: string): ProfileActionState => ({ status: "error", error });
 const ok: ProfileActionState = { status: "success", error: null };
 
-/** U1-PF1 — save phone + primary workplace (+ optional new photo). */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * U1-PF1 — save phone, specialty, primary workplace (+ optional new photo).
+ * Specialty moved here from signup on 2026-09-08 (client directive) and is
+ * deliberately re-editable: medical officers become specialists and
+ * sub-specialists over a career.
+ */
 export async function updateProfileAction(
   _prev: ProfileActionState,
   formData: FormData
@@ -29,10 +37,15 @@ export async function updateProfileAction(
 
   const phone = String(formData.get("phone") ?? "").trim();
   const primaryWorkplace = String(formData.get("primaryWorkplace") ?? "");
+  const specialtyId = String(formData.get("specialtyId") ?? "").trim();
   const photo = formData.get("photo");
 
   if (phone && !/^\+?[0-9 ()-]{6,20}$/.test(phone)) {
     return err("Enter a valid contact number.");
+  }
+
+  if (specialtyId && !UUID_RE.test(specialtyId)) {
+    return err("Select a valid field / specialty.");
   }
 
   let primaryId: string | null = null;
@@ -69,8 +82,25 @@ export async function updateProfileAction(
       on conflict do nothing
     `;
   }
+  if (specialtyId) {
+    // One primary per practitioner (partial unique index): demote the
+    // current one, then upsert the chosen one as primary — one tx.
+    await sql.begin(async (tx) => {
+      await tx`
+        update practitioner_specialties set is_primary = false
+        where practitioner_id = ${userId} and is_primary
+          and specialty_id <> ${specialtyId}::uuid
+      `;
+      await tx`
+        insert into practitioner_specialties (practitioner_id, specialty_id, is_primary)
+        values (${userId}, ${specialtyId}::uuid, true)
+        on conflict (practitioner_id, specialty_id) do update set is_primary = true
+      `;
+    });
+  }
 
   revalidatePath("/profile");
+  revalidatePath("/dashboard");
   return ok;
 }
 

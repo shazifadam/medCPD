@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { ArrowLeft } from "lucide-react";
 import { getAdminEventDetail } from "@/lib/admin-events";
 import { cn } from "@/lib/utils";
@@ -124,7 +125,9 @@ export default async function ManageEventPage({
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          {format(starts, "d MMM yyyy")}
+          {formatMvt(starts, "d MMM yyyy")}
+          {" · "}
+          {formatMvt(starts, "HH:mm")} – {formatMvt(event.endsAt, "HH:mm")} MVT
           {event.credits != null ? ` · ${event.credits.toFixed(1)} credits` : ""}
         </p>
       </div>

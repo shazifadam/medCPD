@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { getIdentity, hasRole } from "@/lib/auth/identity";
 import { resolveOrganization } from "@/lib/orgs";
+import { fromMvtLocal } from "@/lib/time";
 
 export type AdminEventActionState = {
   status: "idle" | "success" | "error";
@@ -32,8 +33,10 @@ export async function createEventAction(
   const title = String(formData.get("title") ?? "").trim();
   const activityTypeId = String(formData.get("activityTypeId") ?? "");
   const venue = String(formData.get("venue") ?? "").trim();
-  const startsAt = String(formData.get("startsAt") ?? "");
-  const endsAt = String(formData.get("endsAt") ?? "");
+  // datetime-local values are typed as Maldives time (events.timezone) —
+  // convert to UTC instants here, never let Postgres guess the zone.
+  const startsAt = fromMvtLocal(String(formData.get("startsAt") ?? ""));
+  const endsAt = fromMvtLocal(String(formData.get("endsAt") ?? ""));
   const description = String(formData.get("description") ?? "").trim();
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw ? Number(capacityRaw) : null;
@@ -45,7 +48,10 @@ export async function createEventAction(
   if (!activityTypeId) {
     return { status: "error", error: "Select an activity type." };
   }
-  if (!startsAt || !endsAt || new Date(endsAt) <= new Date(startsAt)) {
+  if (!startsAt || !endsAt) {
+    return { status: "error", error: "Enter the start and end date/time." };
+  }
+  if (new Date(endsAt) <= new Date(startsAt)) {
     return { status: "error", error: "End must be after start." };
   }
   if (capacity != null && (Number.isNaN(capacity) || capacity <= 0)) {

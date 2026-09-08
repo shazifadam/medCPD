@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { ArrowLeft } from "lucide-react";
 import { sql } from "@/lib/db";
 import { getEventReviewDetail } from "@/lib/reviews";
@@ -59,7 +60,11 @@ export default async function EventReviewDetailPage({
     ["Organizer", event.organizerName],
     [
       "Dates",
-      `${format(starts, "d MMM")}–${format(ends, "d MMM yyyy")} (${days} day${days > 1 ? "s" : ""})`,
+      `${formatMvt(starts, "d MMM")}–${formatMvt(ends, "d MMM yyyy")} (${days} day${days > 1 ? "s" : ""})`,
+    ],
+    [
+      "Time",
+      `${formatMvt(starts, "HH:mm")} – ${formatMvt(ends, "HH:mm")} MVT`,
     ],
     ...(event.venueName
       ? [["Venue", event.venueName] as [string, string]]
@@ -146,7 +151,7 @@ export default async function EventReviewDetailPage({
                     className="flex gap-6 border-b border-border/60 py-3 last:border-0"
                   >
                     <span className="w-24 shrink-0 font-mono text-[13px] text-muted-foreground">
-                      {format(parseISO(s.startsAt), "d MMM · HH:mm")}
+                      {formatMvt(s.startsAt, "d MMM · HH:mm")}
                     </span>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm text-foreground">{s.title}</span>

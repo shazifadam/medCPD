@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { getAuditLog } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +86,7 @@ export default async function AuditLogPage() {
                 className="flex items-center gap-4 border-t border-border px-6 py-3"
               >
                 <span className="w-32 font-mono text-[13px] text-muted-foreground">
-                  {format(parseISO(r.occurredAt), "d MMM · HH:mm")}
+                  {formatMvt(r.occurredAt, "d MMM · HH:mm")}
                 </span>
                 <span className="flex w-52 flex-col">
                   <span className="truncate text-sm font-medium text-foreground">

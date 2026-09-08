@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { Plus } from "lucide-react";
 import { listAdminEvents } from "@/lib/admin-events";
 import { cn } from "@/lib/utils";
@@ -97,7 +97,7 @@ export default async function ManageEventsPage() {
                   )}
                 </div>
                 <span className="w-32 font-mono text-[13px] text-muted-foreground">
-                  {format(parseISO(r.startsAt), "dd MMM yyyy")}
+                  {formatMvt(r.startsAt, "dd MMM yyyy")}
                 </span>
                 <span className="w-28 font-mono text-[13px] text-foreground">
                   {r.registeredCount}
