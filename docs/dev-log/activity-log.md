@@ -395,3 +395,8 @@
 - 2026-08-09 17:02 — `components/features/profile/profile-form.tsx`
 - 2026-08-09 17:47 — `e2e/profile.spec.ts`
 - 2026-08-09 17:56 — `app/api/cron/year-end/route.ts`
+- 2026-08-10 10:33 — `components/features/organizations/verify-button.tsx`
+- 2026-08-10 10:43 — `components/features/organizations/org-row-actions.tsx`
+- 2026-08-10 11:10 — `components/features/organizations/org-row-actions.tsx`
+- 2026-09-08 13:42 — `lib/time.ts`
+- 2026-09-08 13:48 — `scripts/fix-event-times-20260908.mjs`

@@ -21,3 +21,8 @@
 - Gotcha logged: `UID` is a reserved zsh variable — never use it as a script var name (caused "bad math expression").
 - **Typography direction (user, 2026-07-04, REVISED same day): body stays Regular; ONLY form labels are Geist Light** (`ui/label.tsx` = `font-light` instead of shadcn's `font-medium` — inherited by every FormLabel). The brief global-light experiment was reverted. ⚠️ Figma label styles show Regular/Medium — sync labels to Light for parity.
 - **Signup flow decision (user, 2026-07-04): email-link / passwordless signup, exactly as designed.** AU3 collects the 6 designed fields (no password) → `signInWithOtp(shouldCreateUser: true, metadata)` creates the account → AU5 success → Supabase emails a verification/magic link (AU6) → clicking signs them in → AU8 set-password → AU9 pending gate until approved. AU8 doubles as the reset-password screen for AU7's flow. Known caveat: dev testing throttled by Supabase's built-in sender (~2–4 emails/hr) until Resend SMTP is wired.
+
+## 2026-09-08 — trial-run fixes
+- **All event times are Maldives wall-clock.** `events.timezone` is always `Indian/Maldives`; `lib/time.ts` is the ONLY conversion point (parse `datetime-local` as MVT → UTC instant; render with `formatMvt`). Never `format()` a stored instant directly — the server runs in UTC and browsers run anywhere.
+- **Signup collects only identity + contact** (client directive): specialty and workplace are profile sections because they change over a career. Consumers must stay null-safe for both.
+- **Prod data writes are the user's action.** Claude's session classifier blocks writes to the live DB; one-off corrections ship as a guarded script in `scripts/` that Shazif runs.

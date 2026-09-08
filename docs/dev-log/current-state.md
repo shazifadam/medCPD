@@ -1,6 +1,14 @@
 # Current State
 
-**Snapshot date:** 2026-08-09 (CPD UPDATE 1 ✅ ALL 7 STEPS BUILT — unit 16/16, e2e 94 green; live at https://cpd.medicalmv.com)
+**Snapshot date:** 2026-09-08 (trial-run prep: health check ✅, Maldives-time fix + signup simplification merged to main via PR #2)
+
+## ▶ RESUME HERE — 2026-09-08 (MMA trial run with a real event tonight)
+
+- **Health check (pre-trial, all green):** repo == deployed; 19 migrations applied; RLS on every table; auth/storage/Resend DNS/cron OK (CRON_SECRET set in Vercel, keep-alive 200); DMARC fixed. Noted: 7 e2e fixture users still in prod (visible in admin lists — remove only on explicit ask); two Vercel projects (med-cpd + gradus-cpd) both build each push; keychain Supabase token is the other account (Management API 403 → use postgres-js direct checks).
+- **🐛 Event times were stored 5 h late.** Admin create form posted raw `datetime-local`; Postgres session TZ=UTC; client components then rendered browser-zone (phones showed "9 Sep 01:00–03:00", server detail said "20:00 MVT"). Fix = `lib/time.ts` (`@date-fns/tz` TZDate): `fromMvtLocal` on create, `formatMvt`/`isTodayMvt` on every event + timestamp render (cards, My events, detail, dashboard, admin/committee event pages, check-in times, audit/OD1 times). Unit tests `lib/time.test.ts`. Data: Shazif ran `scripts/fix-event-times-20260908.mjs` (−5 h on the two MMA-created rows) — the classifier blocks Claude from prod writes.
+- **Signup simplified (client directive):** AU3 no longer collects Field/specialty or Primary workplace (careers change: MO → specialist → sub-specialist; freelancing). Both are editable on `/profile` — new specialty Select (`updateProfileAction` demotes + upserts primary in one tx). Zod `signUpSchema` shrank; all consumers were already null-safe. e2e auth-signup + profile updated (11/11). **Figma AU3 `287:1337` now deviates (fields removed) — Figma update pending.**
+- **Ship:** PR #2 `feature/trial-run-fixes` → merged to main 2026-09-08 (`4e2c023`). gradus-cpd preview builds fail for new branches (no Preview-scoped env vars — add in Vercel dashboard once); med-cpd preview OK.
+- **Next:** update Figma AU3/PF1 frames; decide on removing the 7 e2e fixture users from prod; consider a "complete your profile" nudge on the dashboard for new signups (specialty/workplace now optional); P8 polish backlog below.
 
 ## ▶ RESUME HERE — 2026-08-09 (CPD Update 1: designs approved, dev started)
 

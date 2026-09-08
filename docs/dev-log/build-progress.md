@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-07-27 (P7 COMPLETE — certificates + PDF + public verify, e2e 74 green; P8 polish next, see [[Current State]])
+**Last updated:** 2026-09-08 (post-launch: Update 1 ✅ 2026-08-09, organizations/settings 2026-08-10, trial-run fixes 2026-09-08 — see [[Current State]])
 
 ---
 
@@ -138,6 +138,14 @@
 - [ ] Mobile responsive pass (17 mobile screens designed)
 - [ ] Accessibility + final QA
 - [ ] Production env + deploy
+
+---
+
+## Post-launch updates
+- [x] Update 1 (2026-08-09) — calendar-year cycle, notifications, org combobox, framework editing, practitioner scores/overrides, profile, year-end cron
+- [x] Organizations verify/edit/archive + Settings (2026-08-10, PR #1)
+- [x] Trial-run fixes (2026-09-08, PR #2) — event times in Maldives time (`lib/time.ts`); signup drops specialty + workplace → editable on profile
+- [ ] Figma AU3/PF1 frames updated to match the simplified signup / profile specialty select
 
 ---
 
