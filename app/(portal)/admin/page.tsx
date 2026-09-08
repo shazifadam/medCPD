@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { ChevronRight } from "lucide-react";
 import { getOverviewData } from "@/lib/admin";
 import { sql } from "@/lib/db";
@@ -183,7 +184,7 @@ export default async function AdminOverviewPage() {
                     {a.target ?? a.tableName ?? ""}
                   </p>
                   <p className="font-mono text-xs text-muted-foreground">
-                    {format(parseISO(a.occurredAt), "d MMM · HH:mm")}
+                    {formatMvt(a.occurredAt, "d MMM · HH:mm")}
                   </p>
                 </div>
               ))}

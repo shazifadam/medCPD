@@ -9,7 +9,7 @@ import AxeBuilder from "@axe-core/playwright";
  */
 
 test.describe("AU3 — sign up, form", () => {
-  test("renders the six designed fields per the Figma frame", async ({
+  test("renders the designed fields (no specialty/workplace — moved to profile 2026-09-08)", async ({
     page,
   }) => {
     await page.goto("/signup");
@@ -20,10 +20,11 @@ test.describe("AU3 — sign up, form", () => {
     ).toBeVisible();
     await expect(page.getByText("Register as a practitioner")).toBeVisible();
 
-    // The six designed fields — and deliberately NO password field.
+    // Designed fields — deliberately NO password field, and (since
+    // 2026-09-08) NO specialty / workplace: those are profile sections.
     // Redesign 294:13161: type = radio pair, chosen type prefixes the number.
     await expect(page.getByLabel("Full name")).toBeVisible();
-    await expect(page.getByLabel("Field / specialty")).toBeVisible();
+    await expect(page.getByLabel("Field / specialty")).toHaveCount(0);
     await expect(page.getByRole("radio", { name: "PMR" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "TMR" })).toBeVisible();
     // Number field is revealed by the type radio, not shown up front
@@ -36,22 +37,13 @@ test.describe("AU3 — sign up, form", () => {
     );
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Contact number")).toBeVisible();
-    await expect(page.getByLabel("Primary workplace")).toBeVisible();
+    await expect(page.getByLabel("Primary workplace")).toHaveCount(0);
     await expect(page.getByLabel(/password/i)).toHaveCount(0);
 
     await expect(
       page.getByRole("button", { name: "Create account" })
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  });
-
-  test("specialty dropdown is fed from the DB seed", async ({ page }) => {
-    await page.goto("/signup");
-    await page.getByLabel("Field / specialty").click();
-    await expect(
-      page.getByRole("option", { name: "General Practice" })
-    ).toBeVisible();
-    await expect(page.getByRole("option", { name: "Other" })).toBeVisible();
   });
 
   test("selected registration type appears as the number-field prefix", async ({
@@ -120,14 +112,8 @@ test.describe("AU4 — sign up, validation error (negative)", () => {
     await expect(alert).toContainText("Check your details");
     await expect(alert).toContainText("Please correct the highlighted fields.");
 
-    // Inline field errors (shared Zod schema). The specialty error text
-    // equals the select placeholder — scope it to the form-message element.
+    // Inline field errors (shared Zod schema).
     await expect(page.getByText("Enter your full name")).toBeVisible();
-    await expect(
-      page.locator('[id$="-form-item-message"]', {
-        hasText: "Select your field",
-      })
-    ).toBeVisible();
     await expect(
       page.getByText("Select your registration type")
     ).toBeVisible();

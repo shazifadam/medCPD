@@ -13,16 +13,28 @@ import {
 import { OrgCombobox, type OrgOption } from "@/components/patterns/org-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-/** U1-PF1 — profile edit: contact, primary workplace, chips, photo. */
+/**
+ * U1-PF1 — profile edit: contact, specialty, primary workplace, chips, photo.
+ * Specialty + workplace are collected HERE, not at signup (2026-09-08).
+ */
 export function ProfileForm({
   profile,
   avatarUrl,
   organizations,
+  specialties,
 }: {
   profile: ProfileData;
   avatarUrl: string | null;
   organizations: OrgOption[];
+  specialties: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [state, setState] = useState<ProfileActionState>({
@@ -105,9 +117,13 @@ export function ProfileForm({
       {/* Contact + workplace */}
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="text-base font-semibold text-foreground">
-          Contact &amp; workplace
+          Contact, specialty &amp; workplace
         </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <p className="mt-1 text-sm text-muted-foreground">
+          Keep these current — update your specialty as you progress, and
+          your workplaces as they change.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="pf-phone" className="text-sm font-medium">
               Contact number
@@ -118,6 +134,26 @@ export function ProfileForm({
               defaultValue={profile.phone ?? ""}
               placeholder="+960 7771234"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="pf-specialty" className="text-sm font-medium">
+              Field / specialty
+            </label>
+            <Select
+              name="specialtyId"
+              defaultValue={profile.specialtyId ?? undefined}
+            >
+              <SelectTrigger id="pf-specialty">
+                <SelectValue placeholder="Select your field" />
+              </SelectTrigger>
+              <SelectContent>
+                {specialties.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="pf-workplace" className="text-sm font-medium">
@@ -221,7 +257,7 @@ export function ProfileForm({
           These fields are managed by the MMA registry. Contact the registrar to
           request changes.
         </p>
-        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
+        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted-foreground">
               Full name
@@ -233,12 +269,6 @@ export function ProfileForm({
               Registration
             </dt>
             <dd className="mt-1 font-mono text-foreground">{registration}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-              Specialty
-            </dt>
-            <dd className="mt-1 text-foreground">{profile.specialty ?? "—"}</dd>
           </div>
         </dl>
       </section>

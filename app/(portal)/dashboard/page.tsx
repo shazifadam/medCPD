@@ -9,6 +9,7 @@ import { getActivityTypeOptions } from "@/lib/activities";
 import { getRecentEntries } from "@/lib/entries";
 import { listEvents } from "@/lib/events";
 import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { LogActivityDialog } from "@/components/features/log-activity/log-activity-dialog";
 import { StatusBadge } from "@/components/features/entries/status-badge";
@@ -193,7 +194,7 @@ export default async function DashboardPage() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {[e.hostName, format(parseISO(e.startsAt), "d MMM yy")]
+                    {[e.hostName, formatMvt(e.startsAt, "d MMM yy")]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>

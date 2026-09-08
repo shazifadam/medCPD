@@ -11,13 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/patterns/phone-input";
 import { DEFAULT_DIAL_CODE } from "@/lib/phone";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Form,
@@ -28,20 +21,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AuthCard, AuthHeading } from "./auth-card";
-import { OrgCombobox, type OrgOption } from "@/components/patterns/org-combobox";
 
-export interface SpecialtyOption {
-  id: string;
-  name: string;
-}
-
-export function SignUpForm({
-  specialties,
-  organizations,
-}: {
-  specialties: SpecialtyOption[];
-  organizations: OrgOption[];
-}) {
+/**
+ * AU3 — sign up. Specialty and primary workplace were removed from this
+ * form on 2026-09-08 (client directive: keep registration as simple as
+ * possible; both change over a career and live on /profile instead).
+ */
+export function SignUpForm() {
   const [state, setState] = useState<SignUpState>({
     status: "idle",
     error: null,
@@ -52,13 +38,11 @@ export function SignUpForm({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       fullName: "",
-      specialtyId: "",
       mmdcRegistration: "",
       mmdcRegistrationType: undefined,
       email: "",
       phoneDialCode: DEFAULT_DIAL_CODE,
       phone: "",
-      primaryWorkplace: "",
     },
   });
 
@@ -158,34 +142,6 @@ export function SignUpForm({
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="specialtyId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Field / specialty</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || undefined}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your field" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {specialties.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -305,26 +261,6 @@ export function SignUpForm({
                       {form.formState.errors.phoneDialCode.message}
                     </p>
                   )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="primaryWorkplace"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel htmlFor="su-workplace">Primary workplace</FormLabel>
-                  <FormControl>
-                    <OrgCombobox
-                      triggerId="su-workplace"
-                      fieldName="primaryWorkplaceDisplay"
-                      options={organizations}
-                      placeholder="Search or select your workplace"
-                      onValueChange={field.onChange}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

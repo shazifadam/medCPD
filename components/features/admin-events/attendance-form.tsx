@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import type { RosterRow } from "@/lib/admin-events";
 import { verifyAttendanceAction } from "@/app/(portal)/admin/events/actions";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ export function AttendanceForm({
             </span>
             <span className="w-40 font-mono text-[13px] text-muted-foreground">
               {r.checkedInAt
-                ? format(parseISO(r.checkedInAt), "d MMM · HH:mm")
+                ? formatMvt(r.checkedInAt, "d MMM · HH:mm")
                 : "–"}
             </span>
             <span className="w-28 text-sm">

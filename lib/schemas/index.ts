@@ -18,13 +18,15 @@ export type SignInInput = z.infer<typeof signInSchema>;
 
 /**
  * AU3 — Sign up. Passwordless by design (decision 2026-07-04): the account
- * is created via email link; the password is set afterwards on AU8. Fields
- * match the designed form exactly (no password field).
+ * is created via email link; the password is set afterwards on AU8. No
+ * password field. Specialty and workplace were REMOVED from signup on
+ * 2026-09-08 (client directive: keep registration minimal — practitioners
+ * change specialty/workplace over their careers, so both live on the
+ * profile page as editable sections instead).
  */
 export const signUpSchema = z
   .object({
     fullName: z.string().trim().min(2, "Enter your full name"),
-    specialtyId: z.string().uuid("Select your field"),
     // Validated conditionally below: the field only appears once a
     // registration type is picked, so it must not fail while it is hidden.
     mmdcRegistration: z.string().trim().max(32, "Enter a valid PMR/TMR number"),
@@ -45,10 +47,6 @@ export const signUpSchema = z
       .string()
       .trim()
       .regex(/^[0-9]{6,15}$/, "Enter a valid contact number"),
-    /** OrgCombobox value: `id:<uuid>` or `new:<name>` (Update 1 §5). */
-    primaryWorkplace: z
-      .string()
-      .regex(/^(id:.+|new:.{2,})$/, "Select or add your primary workplace"),
   })
   .superRefine((values, ctx) => {
     // The number field is revealed by the type radio (user directive

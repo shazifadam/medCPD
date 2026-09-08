@@ -11,6 +11,7 @@ export interface ProfileData {
   mmdcRegistration: string | null;
   mmdcRegistrationType: string | null;
   specialty: string | null;
+  specialtyId: string | null;
   avatarPath: string | null;
   primaryWorkplace: { id: string; name: string } | null;
   otherWorkplaces: { id: string; name: string }[];
@@ -27,6 +28,7 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
         mmdc_registration: string | null;
         mmdc_registration_type: string | null;
         specialty: string | null;
+        specialty_id: string | null;
         avatar_path: string | null;
         primary_institution_id: string | null;
         primary_institution_name: string | null;
@@ -34,7 +36,7 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
     >`
       select p.id, p.full_name, p.email, p.phone,
              p.mmdc_registration, p.mmdc_registration_type,
-             s.name as specialty, p.avatar_path,
+             s.name as specialty, ps.specialty_id, p.avatar_path,
              p.primary_institution_id, i.name as primary_institution_name
       from profiles p
       left join practitioner_specialties ps
@@ -61,6 +63,7 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
     mmdcRegistration: r.mmdc_registration,
     mmdcRegistrationType: r.mmdc_registration_type,
     specialty: r.specialty,
+    specialtyId: r.specialty_id,
     avatarPath: r.avatar_path,
     primaryWorkplace:
       r.primary_institution_id && r.primary_institution_name

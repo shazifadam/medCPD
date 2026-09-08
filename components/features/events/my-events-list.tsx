@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { format, parseISO } from "date-fns";
+import { formatMvt } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { MyEventRow } from "@/lib/events";
 import { Button } from "@/components/ui/button";
@@ -119,7 +119,7 @@ export function MyEventsList({ rows }: { rows: MyEventRow[] }) {
         </div>
       ) : (
         visible.map((r) => {
-          const starts = parseISO(r.startsAt);
+          const starts = r.startsAt;
           const pill = STATE_PILL[r.state];
           return (
             <div
@@ -128,10 +128,10 @@ export function MyEventsList({ rows }: { rows: MyEventRow[] }) {
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-md bg-accent">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-primary">
-                  {format(starts, "MMM")}
+                  {formatMvt(starts, "MMM")}
                 </span>
                 <span className="text-xl font-semibold text-foreground">
-                  {format(starts, "d")}
+                  {formatMvt(starts, "d")}
                 </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -143,8 +143,8 @@ export function MyEventsList({ rows }: { rows: MyEventRow[] }) {
                 </Link>
                 <p className="text-sm text-muted-foreground">
                   {[
-                    format(starts, "d MMM"),
-                    `${format(starts, "h:mm a")} — ${format(parseISO(r.endsAt), "h:mm a")}`,
+                    formatMvt(starts, "d MMM"),
+                    `${formatMvt(starts, "h:mm a")} — ${formatMvt(r.endsAt, "h:mm a")}`,
                     r.venueName,
                   ]
                     .filter(Boolean)
