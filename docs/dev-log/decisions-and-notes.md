@@ -26,3 +26,10 @@
 - **All event times are Maldives wall-clock.** `events.timezone` is always `Indian/Maldives`; `lib/time.ts` is the ONLY conversion point (parse `datetime-local` as MVT → UTC instant; render with `formatMvt`). Never `format()` a stored instant directly — the server runs in UTC and browsers run anywhere.
 - **Signup collects only identity + contact** (client directive): specialty and workplace are profile sections because they change over a career. Consumers must stay null-safe for both.
 - **Prod data writes are the user's action.** Claude's session classifier blocks writes to the live DB; one-off corrections ship as a guarded script in `scripts/` that Shazif runs.
+
+## 2026-10-10 — signup reuses rejected profiles
+
+- **Decision (Shazif):** a rejected applicant who fills the signup form again (same email, or same PMR/TMR number under a new email) gets their existing profile back instead of a "sign in to reapply" message. Same profile id, details refreshed, pending again, `signup` attempt logged. Pending/verified profiles are never touched by the form.
+- **Email move:** done with a service-role `updateUserById` (new `auth.updateUserEmail` on the seam) inside the profile transaction; the normal verification link then goes to the new address. Chosen over Supabase's user-initiated email change because the applicant has no session on the signup form and the change pair of confirmation emails would not fit the passwordless flow.
+- **Refused edge:** email matches rejected profile X and number matches rejected profile Y (X ≠ Y) → refuse and point to the secretariat; reusing either would collide on the other's unique column.
+- **Test gotcha:** Supabase's magic-link cooldown lives on the auth user row, not the address — tests that send twice to one reused user must null `recovery_sent_at`/`confirmation_sent_at` between sends.

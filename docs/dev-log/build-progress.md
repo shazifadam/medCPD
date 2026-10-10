@@ -146,6 +146,7 @@
 - [x] Organizations verify/edit/archive + Settings (2026-08-10, PR #1)
 - [x] Trial-run fixes (2026-09-08, PR #2) — event times in Maldives time (`lib/time.ts`); signup drops specialty + workplace → editable on profile
 - [x] Registration reopen/reapply + attempt history, Medical Officer designation (2026-10-10, merged to main `7f9dd6c`)
+- [ ] Signup reuses a rejected profile by email or PMR/TMR number (2026-10-10, `feature/signup-reuse-rejected` `2ee4cdc`, awaiting localhost review → push)
 - [ ] Figma AU3/PF1 frames updated to match the simplified signup / profile specialty select; add frames for /reapply, rejected gate, Reopen dialog, Application history, new profile row layout
 
 ---
