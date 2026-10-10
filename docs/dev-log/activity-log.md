@@ -410,3 +410,15 @@
 - Orchestrated build (3 Opus lanes + e2e lane + QA agent). New `registration_attempts` table + `lib/registration.ts`; admin Reopen dialog + Application history card + queue attempt pill; `/reapply` page for rejected practitioners; signup never writes to an existing profile. Medical Officer added to designations; profile field renamed Designation, Primary workplace full-width row.
 - Migrations 20261010090000 + 20261010090100 applied by Shazif via `scripts/apply-migration.mjs`. e2e approvals/auth-signup/profile 22 passed. QA blocker (unauthenticated profile rewrite on signup with a rejected email) fixed before commit.
 - Commit `97e22a7` on `feature/registration-reapply`; Shazif reviewed on localhost and merged to main `7f9dd6c` (prod deploy) the same day.
+- 2026-10-10 15:51 — `app/(auth)/signup/actions.ts`
+- 2026-10-10 15:51 — `app/(auth)/signup/actions.ts`
+- 2026-10-10 15:51 — `lib/auth/types.ts`
+- 2026-10-10 15:51 — `lib/auth/supabase.ts`
+- 2026-10-10 15:51 — `lib/auth/supabase.ts`
+- 2026-10-10 17:10 — `lib/auth/supabase.ts`
+- 2026-10-10 17:10 — `lib/auth/types.ts`
+- 2026-10-10 18:55 — `lib/auth/supabase.ts`
+- 2026-10-10 18:55 — `lib/auth/supabase.ts`
+- 2026-10-10 18:55 — `lib/auth/types.ts`
+- 2026-10-10 18:55 — `app/(auth)/signup/actions.ts`
+- 2026-10-10 19:02 — `app/(auth)/signup/actions.ts`

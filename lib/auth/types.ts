@@ -54,5 +54,15 @@ export interface AuthProvider {
   ): Promise<{ error: string | null }>;
   /** AU8 — set a new password for the current (link-authenticated) session. */
   updatePassword(password: string): Promise<{ error: string | null }>;
+  /**
+   * Move an auth user to a new email (service role, no session). Used when a
+   * rejected applicant signs up again under a different address: the same
+   * account is kept and only the address changes. No email is sent here —
+   * the caller follows up with the normal verification link.
+   */
+  updateUserEmail(
+    userId: string,
+    email: string
+  ): Promise<{ error: string | null }>;
   signOut(): Promise<void>;
 }

@@ -267,9 +267,6 @@ export function SignUpForm() {
             />
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending && (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-              )}
               {pending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
