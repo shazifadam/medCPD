@@ -4,6 +4,7 @@ import { signUpSchema } from "@/lib/schemas";
 import { formatPhone, DEFAULT_DIAL_CODE } from "@/lib/phone";
 import { auth } from "@/lib/auth";
 import { sql } from "@/lib/db";
+import type { RegistrationState } from "@/lib/auth/identity";
 
 export type SignUpState = {
   status: "idle" | "success" | "error";
@@ -33,15 +34,60 @@ export async function signUpAction(
     return { status: "error", error: "Please correct the highlighted fields." };
   }
   const input = parsed.data;
+  const phone = formatPhone(input.phoneDialCode, input.phone);
 
-  // Duplicate MMDC number? Check before creating the auth user — the unique
-  // constraint would otherwise abort the profile trigger with an opaque error.
-  const dup = await sql<{ id: string }[]>`
-    select id from profiles
+  // Never create a duplicate row (Fix 1, 2026-10-10). Email first: it is the
+  // account identity. Nothing is written to an existing profile from this
+  // unauthenticated form: a rejected applicant resubmits on /reapply after
+  // signing in, which logs the new attempt on the same profile.
+  const byEmail = await sql<
+    { id: string; registration_state: RegistrationState }[]
+  >`
+    select id, registration_state from profiles
+    where email = ${input.email}
+    limit 1
+  `;
+  const existing = byEmail[0];
+  if (existing?.registration_state === "verified") {
+    return {
+      status: "error",
+      error: "This email is already registered. Sign in instead.",
+    };
+  }
+  if (existing?.registration_state === "pending") {
+    return {
+      status: "error",
+      error:
+        "An application for this email is already under review. Sign in to check its status.",
+    };
+  }
+  if (existing) {
+    return {
+      status: "error",
+      error:
+        "The application for this email was not approved. Sign in to correct your details and resubmit it.",
+    };
+  }
+
+  // New email: any holder of the number blocks the signup, because the
+  // unique constraint would otherwise abort the profile trigger with an
+  // opaque error.
+  const byNumber = await sql<
+    { id: string; registration_state: RegistrationState }[]
+  >`
+    select id, registration_state from profiles
     where mmdc_registration = ${input.mmdcRegistration}
     limit 1
   `;
-  if (dup.length > 0) {
+  const numberHolder = byNumber[0];
+  if (numberHolder?.registration_state === "rejected") {
+    return {
+      status: "error",
+      error:
+        "This PMR/TMR number was registered under a different email. Sign in with that email to reapply, or contact the MMA secretariat.",
+    };
+  }
+  if (numberHolder) {
     return {
       status: "error",
       error:
@@ -51,13 +97,14 @@ export async function signUpAction(
 
   // Passwordless create (decision 2026-07-04): user + profile row now,
   // verification email out, password set on AU8 after the link is clicked.
+  // Attempt 1 is logged by the handle_new_user() trigger.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const { error } = await auth.signUpWithEmailLink(
     input.email,
     {
       full_name: input.fullName,
       // Country code + national digits joined for storage: "+960 7771234"
-      phone: formatPhone(input.phoneDialCode, input.phone),
+      phone,
       mmdc_registration: input.mmdcRegistration,
       mmdc_registration_type: input.mmdcRegistrationType,
     },

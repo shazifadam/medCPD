@@ -117,13 +117,13 @@ export function ProfileForm({
       {/* Contact + workplace */}
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="text-base font-semibold text-foreground">
-          Contact, specialty &amp; workplace
+          Contact, designation &amp; workplace
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Keep these current — update your specialty as you progress, and
+          Keep these current: update your designation as you progress, and
           your workplaces as they change.
         </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="pf-phone" className="text-sm font-medium">
               Contact number
@@ -137,14 +137,14 @@ export function ProfileForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="pf-specialty" className="text-sm font-medium">
-              Field / specialty
+              Designation
             </label>
             <Select
               name="specialtyId"
               defaultValue={profile.specialtyId ?? undefined}
             >
               <SelectTrigger id="pf-specialty">
-                <SelectValue placeholder="Select your field" />
+                <SelectValue placeholder="Select your designation" />
               </SelectTrigger>
               <SelectContent>
                 {specialties.map((s) => (
@@ -155,18 +155,18 @@ export function ProfileForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="pf-workplace" className="text-sm font-medium">
-              Primary workplace
-            </label>
-            <OrgCombobox
-              triggerId="pf-workplace"
-              fieldName="primaryWorkplace"
-              options={organizations}
-              defaultOption={profile.primaryWorkplace}
-              placeholder="Search or select your workplace"
-            />
-          </div>
+        </div>
+        <div className="mt-4 flex flex-col gap-1.5">
+          <label htmlFor="pf-workplace" className="text-sm font-medium">
+            Primary workplace
+          </label>
+          <OrgCombobox
+            triggerId="pf-workplace"
+            fieldName="primaryWorkplace"
+            options={organizations}
+            defaultOption={profile.primaryWorkplace}
+            placeholder="Search or select your workplace"
+          />
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">

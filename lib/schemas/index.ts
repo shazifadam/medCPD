@@ -24,43 +24,58 @@ export type SignInInput = z.infer<typeof signInSchema>;
  * change specialty/workplace over their careers, so both live on the
  * profile page as editable sections instead).
  */
-export const signUpSchema = z
-  .object({
-    fullName: z.string().trim().min(2, "Enter your full name"),
-    // Validated conditionally below: the field only appears once a
-    // registration type is picked, so it must not fail while it is hidden.
-    mmdcRegistration: z.string().trim().max(32, "Enter a valid PMR/TMR number"),
-    mmdcRegistrationType: z.enum(["PMR", "TMR"], {
-      error: "Select your registration type",
-    }),
-    email: z.string().email("Enter a valid email address"),
-    /**
-     * Contact number is split in two: the calling code comes from the in-field
-     * selector (default +960 — user directive 2026-07-31), the national digits
-     * from the input beside it. Stored joined, `formatPhone()` in lib/phone.
-     */
-    phoneDialCode: z
-      .string()
-      .trim()
-      .regex(/^\+[0-9]{1,4}$/, "Select a country code"),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^[0-9]{6,15}$/, "Enter a valid contact number"),
-  })
-  .superRefine((values, ctx) => {
-    // The number field is revealed by the type radio (user directive
-    // 2026-07-31), so only demand it once a type has been chosen —
-    // otherwise the form would fail on a field that isn't on screen.
-    if (values.mmdcRegistrationType && values.mmdcRegistration.length < 3) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["mmdcRegistration"],
-        message: "Enter a valid PMR/TMR number",
-      });
-    }
-  });
+const signUpFields = z.object({
+  fullName: z.string().trim().min(2, "Enter your full name"),
+  // Validated conditionally below: the field only appears once a
+  // registration type is picked, so it must not fail while it is hidden.
+  mmdcRegistration: z.string().trim().max(32, "Enter a valid PMR/TMR number"),
+  mmdcRegistrationType: z.enum(["PMR", "TMR"], {
+    error: "Select your registration type",
+  }),
+  email: z.string().email("Enter a valid email address"),
+  /**
+   * Contact number is split in two: the calling code comes from the in-field
+   * selector (default +960 — user directive 2026-07-31), the national digits
+   * from the input beside it. Stored joined, `formatPhone()` in lib/phone.
+   */
+  phoneDialCode: z
+    .string()
+    .trim()
+    .regex(/^\+[0-9]{1,4}$/, "Select a country code"),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{6,15}$/, "Enter a valid contact number"),
+});
+
+// The number field is revealed by the type radio (user directive
+// 2026-07-31), so only demand it once a type has been chosen —
+// otherwise the form would fail on a field that isn't on screen.
+function refineRegistrationNumber(
+  values: { mmdcRegistrationType?: "PMR" | "TMR"; mmdcRegistration: string },
+  ctx: z.RefinementCtx
+) {
+  if (values.mmdcRegistrationType && values.mmdcRegistration.length < 3) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["mmdcRegistration"],
+      message: "Enter a valid PMR/TMR number",
+    });
+  }
+}
+
+export const signUpSchema = signUpFields.superRefine(refineRegistrationNumber);
 export type SignUpInput = z.infer<typeof signUpSchema>;
+
+/**
+ * Reapply after a rejection (/reapply). Same fields, messages and refinement
+ * as sign-up minus `email`: the address is the account identity and stays
+ * locked on the reapply form.
+ */
+export const reapplySchema = signUpFields
+  .omit({ email: true })
+  .superRefine(refineRegistrationNumber);
+export type ReapplyInput = z.infer<typeof reapplySchema>;
 
 /** AU8 — Set a new password (also serves AU7's reset flow). */
 export const setPasswordSchema = z

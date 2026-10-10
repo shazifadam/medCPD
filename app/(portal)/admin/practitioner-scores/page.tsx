@@ -63,10 +63,10 @@ export default async function PractitionerScoresPage({
         <select
           name="specialty"
           defaultValue={searchParams.specialty ?? ""}
-          aria-label="Filter by specialty"
+          aria-label="Filter by designation"
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm"
         >
-          <option value="">All specialties</option>
+          <option value="">All designations</option>
           {specialties.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}

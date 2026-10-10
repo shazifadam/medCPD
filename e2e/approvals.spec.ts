@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Browser } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
@@ -63,6 +63,32 @@ test.beforeAll(async () => {
           verified_at = null, verified_by = null
       where email in (${APPLICANT_A}, ${APPLICANT_B})
     `;
+    // Fix 1: a previous run's reapply may have edited B; restore it.
+    await sql`
+      update profiles
+      set full_name = 'E2E Applicant Reject', mmdc_registration = 'PMR-E2E-B1',
+          mmdc_registration_type = 'PMR'
+      where email = ${APPLICANT_B}
+    `;
+    // Reset the fixtures' attempt history to a single pending attempt 1 so
+    // the reopen/reapply counts below are deterministic (fixture rows only).
+    const [{ t }] = await sql<{ t: string | null }[]>`
+      select to_regclass('public.registration_attempts')::text as t
+    `;
+    if (t) {
+      await sql`
+        delete from registration_attempts
+        where profile_id in (select id from profiles where email in (${APPLICANT_A}, ${APPLICANT_B}))
+      `;
+      await sql`
+        insert into registration_attempts
+          (profile_id, attempt_no, submitted_via, full_name, email, phone,
+           mmdc_registration, mmdc_registration_type, outcome)
+        select id, 1, 'signup', full_name, email, phone,
+               mmdc_registration, mmdc_registration_type, 'pending'
+        from profiles where email in (${APPLICANT_A}, ${APPLICANT_B})
+      `;
+    }
   } finally {
     await sql.end();
   }
@@ -174,6 +200,309 @@ test("RA2→RA4 — rejecting stores the reason for the applicant", async ({
     await sql.end();
   }
 });
+
+/* ── Fix 1: reopen (admin) + reapply (practitioner), attempts logged ── */
+
+const PASSWORD = "E2eTest!Passw0rd";
+
+type AttemptRow = {
+  attempt_no: number;
+  submitted_via: string;
+  outcome: string;
+  rejection_reason: string | null;
+};
+
+async function stateOf(email: string) {
+  const sql = connectDb();
+  try {
+    const [profile] = await sql<
+      {
+        id: string;
+        full_name: string;
+        registration_state: string;
+        rejection_reason: string | null;
+      }[]
+    >`
+      select id, full_name, registration_state, rejection_reason
+      from profiles where email = ${email}
+    `;
+    const attempts = await sql<AttemptRow[]>`
+      select attempt_no, submitted_via, outcome, rejection_reason
+      from registration_attempts
+      where profile_id = ${profile.id}
+      order by attempt_no desc
+    `;
+    return { profile, attempts };
+  } finally {
+    await sql.end();
+  }
+}
+
+/** A signed-out context (the file-level admin storageState must not leak). */
+function signedOutContext(browser: Browser) {
+  return browser.newContext({
+    baseURL: "http://localhost:3000",
+    storageState: { cookies: [], origins: [] },
+  });
+}
+
+test("RA2 — reopening a rejected application logs attempt 2", async ({
+  page,
+}) => {
+  const before = await stateOf(APPLICANT_B);
+  await page.goto(`/admin/approvals/${before.profile.id}`);
+
+  await expect(
+    page.getByRole("button", { name: "Approve & grant access" })
+  ).toBeVisible();
+  await expect(async () => {
+    await page.getByRole("button", { name: "Reopen application" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Reopen application" })
+    ).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("attempt 2");
+  await dialog.getByRole("button", { name: "Reopen application" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Back in the pending state: Reject is offered again.
+  await expect(
+    page.getByRole("button", { name: "Reject", exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("Pending approval").first()).toBeVisible();
+
+  const history = page
+    .getByRole("list")
+    .filter({ hasText: "Attempt 1" })
+    .getByRole("listitem");
+  await expect(history).toHaveCount(2);
+  await expect(history.nth(0)).toContainText("Attempt 2");
+  await expect(history.nth(0)).toContainText("Reopened by MMA");
+  await expect(history.nth(1)).toContainText("Attempt 1");
+  await expect(history.nth(1)).toContainText("Rejected by");
+
+  const after = await stateOf(APPLICANT_B);
+  expect(after.profile.registration_state).toBe("pending");
+  expect(after.profile.rejection_reason).toBeNull();
+  expect(after.attempts).toHaveLength(2);
+  expect(after.attempts[0].submitted_via).toBe("admin_reopen");
+  expect(after.attempts[0].outcome).toBe("pending");
+  expect(after.attempts[1].outcome).toBe("rejected");
+});
+
+test("RA4 — rejecting the reopened application settles attempt 2", async ({
+  page,
+}) => {
+  const before = await stateOf(APPLICANT_B);
+  await page.goto(`/admin/approvals/${before.profile.id}`);
+
+  await expect(async () => {
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Reject application" })
+    ).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  await page.getByLabel("Reason for rejection").click();
+  await page
+    .getByRole("option", { name: "Incomplete or unclear applicant details" })
+    .click();
+  await page
+    .getByLabel("Details for the applicant")
+    .fill("Second rejection for e2e");
+  await page.getByRole("button", { name: "Reject application" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Reopen application" })
+  ).toBeVisible();
+
+  const after = await stateOf(APPLICANT_B);
+  expect(after.profile.registration_state).toBe("rejected");
+  expect(after.attempts).toHaveLength(2);
+  expect(after.attempts[0].outcome).toBe("rejected");
+  expect(after.attempts[0].rejection_reason).toContain("Second rejection");
+});
+
+test("RA1 — the queue marks a repeat applicant with an attempt pill", async ({
+  page,
+}) => {
+  await page.goto("/admin/approvals");
+  await page.getByRole("tab", { name: /Rejected/ }).click();
+  const row = page
+    .locator("div")
+    .filter({ has: page.getByText(APPLICANT_B, { exact: true }) })
+    .filter({
+      has: page.getByRole("link", { name: "Review E2E Applicant Reject" }),
+    })
+    .last();
+  await expect(row.getByText("Attempt 2", { exact: true })).toBeVisible();
+});
+
+test("AU3 — signup with a rejected profile's number never duplicates it", async ({
+  browser,
+}) => {
+  const dupEmail = `dup-${Date.now()}@cpd-test.local`;
+  const context = await signedOutContext(browser);
+  const page = await context.newPage();
+  try {
+    await page.goto("/signup");
+    await page.getByLabel("Full name").fill("Dup Test");
+    await page.getByRole("radio", { name: "PMR" }).click();
+    await page.getByLabel("Registration number").fill("PMR-E2E-B1");
+    await page.getByLabel("Email").fill(dupEmail);
+    await page.getByLabel("Contact number").fill("7000009");
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    const alert = page.getByRole("main").getByRole("alert");
+    await expect(alert).toContainText("registered under a different email");
+  } finally {
+    await context.close();
+  }
+
+  const sql = connectDb();
+  try {
+    const [{ profiles, users }] = await sql<
+      { profiles: number; users: number }[]
+    >`
+      select
+        (select count(*)::int from profiles where email = ${dupEmail}) as profiles,
+        (select count(*)::int from auth.users where email = ${dupEmail}) as users
+    `;
+    expect(profiles).toBe(0);
+    expect(users).toBe(0);
+  } finally {
+    await sql.end();
+  }
+});
+
+test("AU3 — signup with a rejected profile's email writes nothing and points to sign in", async ({
+  browser,
+}) => {
+  const before = await stateOf(APPLICANT_B);
+  expect(before.profile.registration_state).toBe("rejected");
+
+  const context = await signedOutContext(browser);
+  const page = await context.newPage();
+  try {
+    await page.goto("/signup");
+    await page.getByLabel("Full name").fill("Hijack Attempt");
+    await page.getByRole("radio", { name: "TMR" }).click();
+    await page.getByLabel("Registration number").fill("TMR-HIJACK-1");
+    await page.getByLabel("Email").fill(APPLICANT_B);
+    await page.getByLabel("Contact number").fill("7000008");
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    const alert = page.getByRole("main").getByRole("alert");
+    await expect(alert).toContainText("was not approved");
+
+    // Verified and pending emails get their own message (admin fixture is verified).
+    await page.getByLabel("Email").fill("e2e-admin@cpd-test.local");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(alert).toContainText("already registered. Sign in instead");
+  } finally {
+    await context.close();
+  }
+
+  const after = await stateOf(APPLICANT_B);
+  expect(after.profile.registration_state).toBe("rejected");
+  expect(after.profile.full_name).toBe("E2E Applicant Reject");
+  expect(after.attempts).toHaveLength(before.attempts.length);
+});
+
+test("AU7 → /reapply — a rejected practitioner resubmits on the same profile", async ({
+  browser,
+}) => {
+  const context = await signedOutContext(browser);
+  const page = await context.newPage();
+  try {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(APPLICANT_B);
+    await page.getByLabel("Password").fill(PASSWORD);
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page).toHaveURL(/\/pending$/);
+    await expect(
+      page.getByRole("heading", { name: "Registration not approved" })
+    ).toBeVisible();
+    await expect(page.getByText("Reason:")).toContainText("Second rejection");
+    await page
+      .getByRole("link", { name: "Reapply with corrected details" })
+      .click();
+
+    await expect(page).toHaveURL(/\/reapply$/);
+    await expect(
+      page.getByRole("heading", { name: "Update your application" })
+    ).toBeVisible();
+    await expect(page.getByText("Previous decision:")).toContainText(
+      "Second rejection"
+    );
+    await expect(page.getByLabel("Full name")).toHaveValue(
+      "E2E Applicant Reject"
+    );
+    await expect(page.getByRole("radio", { name: "PMR" })).toBeChecked();
+    await expect(page.getByLabel("Registration number")).toHaveValue(
+      "PMR-E2E-B1"
+    );
+    await expect(page.getByLabel("Email")).toBeDisabled();
+    await expect(page.getByLabel("Email")).toHaveValue(APPLICANT_B);
+
+    // A11y smoke on the new page while it is reachable (B is rejected).
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((v) =>
+      ["serious", "critical"].includes(v.impact ?? "")
+    );
+    expect(serious).toEqual([]);
+
+    await page.getByLabel("Full name").fill("E2E Applicant Reject Updated");
+    await page.getByRole("button", { name: "Resubmit application" }).click();
+
+    await expect(page).toHaveURL(/\/pending$/);
+    await expect(
+      page.getByRole("heading", { name: "Registration under review" })
+    ).toBeVisible();
+  } finally {
+    await context.close();
+  }
+
+  const after = await stateOf(APPLICANT_B);
+  try {
+    expect(after.profile.registration_state).toBe("pending");
+    expect(after.profile.full_name).toBe("E2E Applicant Reject Updated");
+    expect(after.attempts).toHaveLength(3);
+    expect(after.attempts[0].submitted_via).toBe("reapply");
+    expect(after.attempts[0].outcome).toBe("pending");
+  } finally {
+    // Restore the fixture's name (by email; fixture row only).
+    const sql = connectDb();
+    try {
+      await sql`
+        update profiles set full_name = 'E2E Applicant Reject'
+        where email = ${APPLICANT_B}
+      `;
+    } finally {
+      await sql.end();
+    }
+  }
+});
+
+test("/reapply is gated: signed-out → login, verified → dashboard", async ({
+  page,
+  browser,
+}) => {
+  const context = await signedOutContext(browser);
+  const anon = await context.newPage();
+  try {
+    await anon.goto("/reapply");
+    await expect(anon).toHaveURL(/\/login/);
+  } finally {
+    await context.close();
+  }
+
+  // The admin storageState is a verified user.
+  await page.goto("/reapply");
+  await expect(page).toHaveURL(/\/dashboard/);
+});
+
 
 test("approvals pages have no serious/critical a11y violations", async ({
   page,

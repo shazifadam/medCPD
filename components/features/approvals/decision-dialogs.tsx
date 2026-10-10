@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, RotateCcw } from "lucide-react";
 import {
   approveApplicantAction,
   rejectApplicantAction,
+  reopenApplicantAction,
   type ApprovalActionState,
 } from "@/app/(portal)/admin/approvals/actions";
 import { Button } from "@/components/ui/button";
@@ -253,6 +254,89 @@ export function RejectDialog({
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
             )}
             {pending ? "Rejecting…" : "Reject application"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Reopen a rejected application (no designed frame; mirrors the RA3/RA4
+ * dialog anatomy). Returns the applicant to the pending queue as a new
+ * attempt; the earlier decision stays in the application history.
+ */
+export function ReopenDialog({
+  applicantId,
+  applicantName,
+  registrationNumber,
+  nextAttemptNo,
+}: {
+  applicantId: string;
+  applicantName: string;
+  registrationNumber: string | null;
+  nextAttemptNo: number;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<ApprovalActionState>({
+    status: "idle",
+    error: null,
+  });
+  const [pending, startTransition] = useTransition();
+
+  function confirm() {
+    startTransition(async () => {
+      const result = await reopenApplicantAction(applicantId);
+      setState(result);
+      if (result.status === "success") {
+        setOpen(false);
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full">
+          Reopen application
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-[480px]">
+        <DialogHeader>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-status-pending-bg">
+            <RotateCcw className="h-5 w-5 text-status-pending" aria-hidden />
+          </div>
+          <DialogTitle>Reopen application</DialogTitle>
+          <DialogDescription>
+            {[applicantName, registrationNumber].filter(Boolean).join(" · ")}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <p className="rounded-md bg-muted px-4 py-3 text-sm text-foreground">
+            Returns to the pending queue as attempt {nextAttemptNo}. The
+            previous decision stays in the history.
+          </p>
+          <p className="rounded-md bg-accent px-4 py-2.5 text-sm text-primary">
+            The applicant will be emailed that their application is under
+            review again.
+          </p>
+          {state.status === "error" && (
+            <p role="alert" className="text-sm text-status-rejected">
+              {state.error}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={confirm} disabled={pending}>
+            {pending && (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            )}
+            {pending ? "Reopening…" : "Reopen application"}
           </Button>
         </DialogFooter>
       </DialogContent>

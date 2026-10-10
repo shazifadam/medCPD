@@ -108,9 +108,18 @@ export function ApplicantsTable({ rows }: { rows: ApplicantRow[] }) {
                 className="flex items-center gap-4 border-t border-border px-6 py-3.5"
               >
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-medium text-foreground">
-                    {r.fullName}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-sm font-medium text-foreground">
+                      {r.fullName}
+                    </span>
+                    {r.attemptCount > 1 && (
+                      <span
+                        className="shrink-0 rounded-full bg-muted px-2 py-px text-xs text-muted-foreground"
+                      >
+                        Attempt {r.attemptCount}
+                      </span>
+                    )}
+                  </div>
                   <span className="truncate text-xs text-muted-foreground">
                     {r.email}
                   </span>

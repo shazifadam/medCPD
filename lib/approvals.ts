@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "@/lib/db";
+import { listAttempts, type RegistrationAttempt } from "@/lib/registration";
 
 /**
  * RA — registration approvals data. Applicants are profiles by
@@ -16,7 +17,9 @@ export interface ApplicantRow {
   registrationType: string | null; // 'PMR' | 'TMR'
   registrationNumber: string | null;
   state: ApplicantState;
+  /** Latest registration attempt's submitted_at (falls back to created_at). */
   submittedAt: string;
+  attemptCount: number;
 }
 
 export interface ApplicantDetail extends ApplicantRow {
@@ -25,6 +28,8 @@ export interface ApplicantDetail extends ApplicantRow {
   primaryWorkplace: string | null;
   rejectionReason: string | null;
   verifiedAt: string | null;
+  /** Newest first. */
+  attempts: RegistrationAttempt[];
 }
 
 function iso(v: string | Date): string {
@@ -40,13 +45,23 @@ export async function listApplicants(): Promise<ApplicantRow[]> {
       mmdc_registration_type: string | null;
       mmdc_registration: string | null;
       registration_state: ApplicantState;
-      created_at: Date | string;
+      submitted_at: Date | string;
+      attempt_count: number;
     }[]
   >`
-    select id, full_name, email, mmdc_registration_type, mmdc_registration,
-           registration_state, created_at
-    from profiles
-    order by (registration_state = 'pending') desc, created_at desc
+    select p.id, p.full_name, p.email, p.mmdc_registration_type,
+           p.mmdc_registration, p.registration_state,
+           coalesce(a.latest_submitted_at, p.created_at) as submitted_at,
+           coalesce(a.attempt_count, 0) as attempt_count
+    from profiles p
+    left join lateral (
+      select max(ra.submitted_at) as latest_submitted_at,
+             count(*)::int as attempt_count
+      from registration_attempts ra
+      where ra.profile_id = p.id
+    ) a on true
+    order by (p.registration_state = 'pending') desc,
+             coalesce(a.latest_submitted_at, p.created_at) desc
   `;
   return rows.map((r) => ({
     id: r.id,
@@ -55,7 +70,8 @@ export async function listApplicants(): Promise<ApplicantRow[]> {
     registrationType: r.mmdc_registration_type,
     registrationNumber: r.mmdc_registration,
     state: r.registration_state,
-    submittedAt: iso(r.created_at),
+    submittedAt: iso(r.submitted_at),
+    attemptCount: r.attempt_count,
   }));
 }
 
@@ -73,7 +89,7 @@ export async function getApplicant(
       registration_state: ApplicantState;
       rejection_reason: string | null;
       verified_at: Date | string | null;
-      created_at: Date | string;
+      submitted_at: Date | string;
       specialty: string | null;
       primary_workplace: string | null;
     }[]
@@ -81,7 +97,11 @@ export async function getApplicant(
     select p.id, p.full_name, p.email, p.phone,
            p.mmdc_registration_type, p.mmdc_registration,
            p.registration_state, p.rejection_reason, p.verified_at,
-           p.created_at,
+           coalesce(
+             (select max(ra.submitted_at) from registration_attempts ra
+              where ra.profile_id = p.id),
+             p.created_at
+           ) as submitted_at,
            s.name as specialty,
            i.name as primary_workplace
     from profiles p
@@ -94,6 +114,7 @@ export async function getApplicant(
   `;
   const r = rows[0];
   if (!r) return null;
+  const attempts = await listAttempts(r.id);
   return {
     id: r.id,
     fullName: r.full_name,
@@ -106,6 +127,8 @@ export async function getApplicant(
     state: r.registration_state,
     rejectionReason: r.rejection_reason,
     verifiedAt: r.verified_at ? iso(r.verified_at) : null,
-    submittedAt: iso(r.created_at),
+    submittedAt: iso(r.submitted_at),
+    attemptCount: attempts.length,
+    attempts,
   };
 }

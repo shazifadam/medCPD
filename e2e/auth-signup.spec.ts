@@ -24,7 +24,7 @@ test.describe("AU3 — sign up, form", () => {
     // 2026-09-08) NO specialty / workplace: those are profile sections.
     // Redesign 294:13161: type = radio pair, chosen type prefixes the number.
     await expect(page.getByLabel("Full name")).toBeVisible();
-    await expect(page.getByLabel("Field / specialty")).toHaveCount(0);
+    await expect(page.getByLabel("Designation")).toHaveCount(0);
     await expect(page.getByRole("radio", { name: "PMR" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "TMR" })).toBeVisible();
     // Number field is revealed by the type radio, not shown up front

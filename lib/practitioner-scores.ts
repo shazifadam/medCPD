@@ -200,7 +200,9 @@ export async function getScoreDetail(practitionerId: string) {
 
 export async function listSpecialtyOptions() {
   return sql<{ id: string; name: string }[]>`
-    select id, name from specialties order by name
+    select id, name from specialties
+    where is_active
+    order by display_order, name
   `;
 }
 

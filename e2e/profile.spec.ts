@@ -95,11 +95,15 @@ test("profile page has no serious a11y violations", async ({ page }) => {
   expect(serious).toEqual([]);
 });
 
-test("specialty is editable on the profile (moved from signup 2026-09-08)", async ({
+test("designation is editable on the profile (moved from signup 2026-09-08)", async ({
   page,
 }) => {
   await page.goto("/profile");
-  await page.getByLabel("Field / specialty").click();
+  await page.getByLabel("Designation").click();
+  // 2026-10-10: Medical Officer joins the list (majority of practitioners).
+  await expect(
+    page.getByRole("option", { name: "Medical Officer" })
+  ).toBeVisible();
   await page.getByRole("option", { name: "General Practice" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Profile updated.")).toBeVisible();
@@ -116,7 +120,7 @@ test("specialty is editable on the profile (moved from signup 2026-09-08)", asyn
 
   // Re-editable: switch to another field, the primary follows.
   await page.reload();
-  await page.getByLabel("Field / specialty").click();
+  await page.getByLabel("Designation").click();
   await page.getByRole("option", { name: "Other" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Profile updated.")).toBeVisible();
