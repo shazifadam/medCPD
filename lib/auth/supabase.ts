@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { AuthProvider, AuthUser } from "./types";
 
@@ -29,6 +30,19 @@ function supabase() {
         },
       },
     }
+  );
+}
+
+/**
+ * Service-role client for admin operations (no cookies, no session). Only
+ * used for operations the anon client cannot perform, such as changing
+ * another user's email. Never exposed to the browser.
+ */
+function supabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
 
@@ -80,6 +94,16 @@ export const auth: AuthProvider = {
 
   async updatePassword(password) {
     const { error } = await supabase().auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  },
+
+  async updateUserEmail(userId, email) {
+    // Admin update: changes the address directly (no change-confirmation
+    // email pair). Confirmation status is left as it was; the caller sends
+    // the verification link to the new address.
+    const { error } = await supabaseAdmin().auth.admin.updateUserById(userId, {
+      email,
+    });
     return { error: error?.message ?? null };
   },
 

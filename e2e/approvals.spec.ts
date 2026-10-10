@@ -1,4 +1,4 @@
-import { test, expect, type Browser } from "@playwright/test";
+import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
@@ -338,75 +338,230 @@ test("RA1 — the queue marks a repeat applicant with an attempt pill", async ({
   await expect(row.getByText("Attempt 2", { exact: true })).toBeVisible();
 });
 
-test("AU3 — signup with a rejected profile's number never duplicates it", async ({
-  browser,
-}) => {
-  const dupEmail = `dup-${Date.now()}@cpd-test.local`;
-  const context = await signedOutContext(browser);
-  const page = await context.newPage();
-  try {
-    await page.goto("/signup");
-    await page.getByLabel("Full name").fill("Dup Test");
-    await page.getByRole("radio", { name: "PMR" }).click();
-    await page.getByLabel("Registration number").fill("PMR-E2E-B1");
-    await page.getByLabel("Email").fill(dupEmail);
-    await page.getByLabel("Contact number").fill("7000009");
-    await page.getByRole("button", { name: "Create account" }).click();
-
-    const alert = page.getByRole("main").getByRole("alert");
-    await expect(alert).toContainText("registered under a different email");
-  } finally {
-    await context.close();
-  }
-
+/**
+ * Fixture B as the signup tests find it (rejected, attempt 2 settled), so it
+ * can be put back after a reuse signup rewrote it. Restores BOTH the
+ * profiles row and the auth.users email, and drops the attempt the signup
+ * added — the reapply test below counts attempts.
+ */
+async function snapshotB() {
   const sql = connectDb();
   try {
-    const [{ profiles, users }] = await sql<
-      { profiles: number; users: number }[]
+    const [p] = await sql<
+      {
+        id: string;
+        email: string;
+        full_name: string;
+        phone: string | null;
+        mmdc_registration: string | null;
+        mmdc_registration_type: string | null;
+        registration_state: string;
+        rejection_reason: string | null;
+      }[]
     >`
-      select
-        (select count(*)::int from profiles where email = ${dupEmail}) as profiles,
-        (select count(*)::int from auth.users where email = ${dupEmail}) as users
+      select id, email, full_name, phone, mmdc_registration,
+             mmdc_registration_type, registration_state, rejection_reason
+      from profiles where email = ${APPLICANT_B}
     `;
-    expect(profiles).toBe(0);
-    expect(users).toBe(0);
+    const [{ n }] = await sql<{ n: number }[]>`
+      select count(*)::int as n from registration_attempts
+      where profile_id = ${p.id}
+    `;
+    return { ...p, attemptCount: n };
   } finally {
     await sql.end();
   }
-});
+}
 
-test("AU3 — signup with a rejected profile's email writes nothing and points to sign in", async ({
+async function restoreB(b: Awaited<ReturnType<typeof snapshotB>>) {
+  const sql = connectDb();
+  try {
+    await sql`
+      delete from registration_attempts
+      where profile_id = ${b.id} and attempt_no > ${b.attemptCount}
+    `;
+    await sql`
+      update profiles set
+        email = ${b.email},
+        full_name = ${b.full_name},
+        phone = ${b.phone},
+        mmdc_registration = ${b.mmdc_registration},
+        mmdc_registration_type = ${b.mmdc_registration_type},
+        registration_state = ${b.registration_state},
+        rejection_reason = ${b.rejection_reason}
+      where id = ${b.id}
+    `;
+    await sql`update auth.users set email = ${b.email} where id = ${b.id}`;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * Supabase keeps the magic-link cooldown (60 s) on the auth USER, not the
+ * address. Both signup tests below send a link to fixture B's user, so the
+ * second would hit "request this after N seconds": clear the stamps first.
+ */
+async function clearSendCooldown(userId: string) {
+  const sql = connectDb();
+  try {
+    await sql`
+      update auth.users
+      set recovery_sent_at = null, confirmation_sent_at = null,
+          email_change_sent_at = null
+      where id = ${userId}
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
+async function fillSignup(
+  page: Page,
+  v: { name: string; type: "PMR" | "TMR"; number: string; email: string; phone: string }
+) {
+  await page.goto("/signup");
+  await page.getByLabel("Full name").fill(v.name);
+  await page.getByRole("radio", { name: v.type }).click();
+  await page.getByLabel("Registration number").fill(v.number);
+  await page.getByLabel("Email").fill(v.email);
+  await page.getByLabel("Contact number").fill(v.phone);
+  await page.getByRole("button", { name: "Create account" }).click();
+}
+
+test("AU3 — signup with a rejected profile's number reuses it and moves the email", async ({
   browser,
 }) => {
-  const before = await stateOf(APPLICANT_B);
-  expect(before.profile.registration_state).toBe("rejected");
+  const b = await snapshotB();
+  expect(b.registration_state).toBe("rejected");
+  await clearSendCooldown(b.id);
+  const newEmail = `dup-${Date.now()}@cpd-test.local`;
 
-  const context = await signedOutContext(browser);
-  const page = await context.newPage();
   try {
-    await page.goto("/signup");
-    await page.getByLabel("Full name").fill("Hijack Attempt");
-    await page.getByRole("radio", { name: "TMR" }).click();
-    await page.getByLabel("Registration number").fill("TMR-HIJACK-1");
-    await page.getByLabel("Email").fill(APPLICANT_B);
-    await page.getByLabel("Contact number").fill("7000008");
-    await page.getByRole("button", { name: "Create account" }).click();
+    const context = await signedOutContext(browser);
+    const page = await context.newPage();
+    try {
+      await fillSignup(page, {
+        name: "Dup Test",
+        type: "PMR",
+        number: "PMR-E2E-B1",
+        email: newEmail,
+        phone: "7000009",
+      });
+      await expect(
+        page.getByRole("heading", { name: "Account created" })
+      ).toBeVisible({ timeout: 20_000 });
+    } finally {
+      await context.close();
+    }
 
-    const alert = page.getByRole("main").getByRole("alert");
-    await expect(alert).toContainText("was not approved");
-
-    // Verified and pending emails get their own message (admin fixture is verified).
-    await page.getByLabel("Email").fill("e2e-admin@cpd-test.local");
-    await page.getByRole("button", { name: "Create account" }).click();
-    await expect(alert).toContainText("already registered. Sign in instead");
+    const sql = connectDb();
+    try {
+      // Same profile id, no second row, both tables on the new address.
+      const profiles = await sql<
+        { id: string; full_name: string; phone: string; registration_state: string; rejection_reason: string | null }[]
+      >`
+        select id, full_name, phone, registration_state, rejection_reason
+        from profiles where email = ${newEmail}
+      `;
+      expect(profiles).toHaveLength(1);
+      expect(profiles[0].id).toBe(b.id);
+      expect(profiles[0].full_name).toBe("Dup Test");
+      expect(profiles[0].phone).toBe("+960 7000009");
+      expect(profiles[0].registration_state).toBe("pending");
+      expect(profiles[0].rejection_reason).toBeNull();
+      const [{ old_rows, auth_email }] = await sql<
+        { old_rows: number; auth_email: string }[]
+      >`
+        select
+          (select count(*)::int from profiles where email = ${APPLICANT_B}) as old_rows,
+          (select email from auth.users where id = ${b.id}) as auth_email
+      `;
+      expect(old_rows).toBe(0);
+      expect(auth_email).toBe(newEmail);
+      const attempts = await sql<AttemptRow[]>`
+        select attempt_no, submitted_via, outcome, rejection_reason
+        from registration_attempts where profile_id = ${b.id}
+        order by attempt_no desc
+      `;
+      expect(attempts).toHaveLength(b.attemptCount + 1);
+      expect(attempts[0].submitted_via).toBe("signup");
+      expect(attempts[0].outcome).toBe("pending");
+    } finally {
+      await sql.end();
+    }
   } finally {
-    await context.close();
+    await restoreB(b);
   }
+});
 
-  const after = await stateOf(APPLICANT_B);
-  expect(after.profile.registration_state).toBe("rejected");
-  expect(after.profile.full_name).toBe("E2E Applicant Reject");
-  expect(after.attempts).toHaveLength(before.attempts.length);
+test("AU3 — signup with a rejected profile's email reuses it; pending and verified stay untouched", async ({
+  browser,
+}) => {
+  const b = await snapshotB();
+  expect(b.registration_state).toBe("rejected");
+  await clearSendCooldown(b.id);
+
+  try {
+    const context = await signedOutContext(browser);
+    const page = await context.newPage();
+    try {
+      await fillSignup(page, {
+        name: "E2E Applicant Reject Resubmitted",
+        type: "TMR",
+        number: "TMR-E2E-B2",
+        email: APPLICANT_B,
+        phone: "7000008",
+      });
+      await expect(
+        page.getByRole("heading", { name: "Account created" })
+      ).toBeVisible({ timeout: 20_000 });
+
+      // B is pending now: the same email is blocked without being touched;
+      // a verified email (admin fixture) is blocked too.
+      await fillSignup(page, {
+        name: "Hijack Attempt",
+        type: "TMR",
+        number: "TMR-HIJACK-1",
+        email: APPLICANT_B,
+        phone: "7000007",
+      });
+      const alert = page.getByRole("main").getByRole("alert");
+      await expect(alert).toContainText("already under review");
+      await page.getByLabel("Email").fill("e2e-admin@cpd-test.local");
+      await page.getByRole("button", { name: "Create account" }).click();
+      await expect(alert).toContainText("already registered. Sign in instead");
+    } finally {
+      await context.close();
+    }
+
+    const after = await stateOf(APPLICANT_B);
+    const sql = connectDb();
+    try {
+      expect(after.profile.id).toBe(b.id);
+      expect(after.profile.registration_state).toBe("pending");
+      expect(after.profile.full_name).toBe("E2E Applicant Reject Resubmitted");
+      expect(after.attempts).toHaveLength(b.attemptCount + 1);
+      expect(after.attempts[0].submitted_via).toBe("signup");
+      expect(after.attempts[0].outcome).toBe("pending");
+      const [row] = await sql<
+        { mmdc_registration: string; mmdc_registration_type: string; auth_email: string; hijack: number }[]
+      >`
+        select p.mmdc_registration, p.mmdc_registration_type,
+               (select email from auth.users where id = p.id) as auth_email,
+               (select count(*)::int from profiles where mmdc_registration = 'TMR-HIJACK-1') as hijack
+        from profiles p where p.id = ${b.id}
+      `;
+      expect(row.mmdc_registration).toBe("TMR-E2E-B2");
+      expect(row.mmdc_registration_type).toBe("TMR");
+      expect(row.auth_email).toBe(APPLICANT_B);
+      expect(row.hijack).toBe(0);
+    } finally {
+      await sql.end();
+    }
+  } finally {
+    await restoreB(b);
+  }
 });
 
 test("AU7 → /reapply — a rejected practitioner resubmits on the same profile", async ({
