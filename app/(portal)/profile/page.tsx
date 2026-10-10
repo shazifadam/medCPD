@@ -25,7 +25,7 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-semibold text-foreground">Profile</h1>
         <p className="text-sm text-muted-foreground">
-          Update your contact details, specialty, workplaces and photo.
+          Update your contact details, designation, workplaces and photo.
           Registration credentials are managed by MMA.
         </p>
       </div>

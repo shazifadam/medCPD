@@ -128,6 +128,17 @@ export function registrationRejectedEmail(
   };
 }
 
+export function registrationReopenedEmail(fullName: string): BrandedEmail {
+  return {
+    heading: "Your registration is under review again",
+    paragraphs: [
+      `Dear ${esc(fullName)},`,
+      "The MMA secretariat has reopened your Gradus registration and is reviewing it again. You will receive an email with the outcome once the review is complete.",
+    ],
+    note: "If you have any questions about your registration, contact the MMA secretariat.",
+  };
+}
+
 export function entryApprovedEmail(
   fullName: string,
   entryTitle: string,

@@ -45,7 +45,7 @@ export async function updateProfileAction(
   }
 
   if (specialtyId && !UUID_RE.test(specialtyId)) {
-    return err("Select a valid field / specialty.");
+    return err("Select a valid designation.");
   }
 
   let primaryId: string | null = null;

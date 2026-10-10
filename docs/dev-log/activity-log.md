@@ -400,3 +400,13 @@
 - 2026-08-10 11:10 — `components/features/organizations/org-row-actions.tsx`
 - 2026-09-08 13:42 — `lib/time.ts`
 - 2026-09-08 13:48 — `scripts/fix-event-times-20260908.mjs`
+- 2026-10-10 12:12 — `scripts/apply-migration.mjs`
+- 2026-10-10 12:13 — `e2e/approvals.spec.ts`
+- 2026-10-10 12:14 — `e2e/approvals.spec.ts`
+- 2026-10-10 12:14 — `e2e/approvals.spec.ts`
+- 2026-10-10 12:14 — `e2e/approvals.spec.ts`
+
+## 2026-10-10 — Registration reopen/reapply + Medical Officer designation (branch, not merged)
+- Orchestrated build (3 Opus lanes + e2e lane + QA agent). New `registration_attempts` table + `lib/registration.ts`; admin Reopen dialog + Application history card + queue attempt pill; `/reapply` page for rejected practitioners; signup never writes to an existing profile. Medical Officer added to designations; profile field renamed Designation, Primary workplace full-width row.
+- Migrations 20261010090000 + 20261010090100 applied by Shazif via `scripts/apply-migration.mjs`. e2e approvals/auth-signup/profile 22 passed. QA blocker (unauthenticated profile rewrite on signup with a rejected email) fixed before commit.
+- Commit `97e22a7` on `feature/registration-reapply`, pushed. Awaiting review on localhost / med-cpd preview before merge to main.

@@ -16,9 +16,11 @@ import { createServerClient } from "@supabase/ssr";
  * (portal) layout owns the approval + role gate.
  */
 
-// Auth-flow pages: reachable only while signed OUT. (/pending and
+// Auth-flow pages: reachable only while signed OUT. (/pending, /reapply and
 // /set-password need a session — they are NOT in this list: /set-password
-// is where email links land, /pending is the unapproved gate.)
+// is where email links land, /pending is the unapproved gate, /reapply is
+// where a rejected applicant resubmits. /reapply is also NOT public, so a
+// signed-out visit is bounced to /login below, same as /set-password.)
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password"];
 
 // Fully public pages: reachable in any auth state. /auth covers the email

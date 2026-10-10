@@ -89,6 +89,23 @@ export default async function globalSetup(config: FullConfig) {
       where email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL}, ${EVENTS_EMAIL}, ${COMMITTEE_EMAIL}, ${CERTS_EMAIL})
         and registration_state <> 'verified'
     `;
+    // Fixtures verified here never pass through the approvals action, so
+    // settle the attempt the signup trigger logged (table exists after
+    // migration 20261010090000).
+    const [{ exists }] = await sql<{ exists: string | null }[]>`
+      select to_regclass('public.registration_attempts') as exists
+    `;
+    if (exists) {
+      await sql`
+        update registration_attempts a
+        set outcome = 'verified', decided_at = now()
+        from profiles p
+        where a.profile_id = p.id
+          and a.outcome = 'pending'
+          and p.registration_state = 'verified'
+          and p.email in (${PRACTITIONER_EMAIL}, ${ADMIN_EMAIL}, ${ENTRIES_EMAIL}, ${ENTRIES_VIEW_EMAIL}, ${EVENTS_EMAIL}, ${COMMITTEE_EMAIL}, ${CERTS_EMAIL})
+      `;
+    }
     for (const [email, role] of [
       [PRACTITIONER_EMAIL, "practitioner"],
       [ENTRIES_EMAIL, "practitioner"],
