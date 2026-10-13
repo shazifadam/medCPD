@@ -33,3 +33,12 @@
 - **Email move:** done with a service-role `updateUserById` (new `auth.updateUserEmail` on the seam) inside the profile transaction; the normal verification link then goes to the new address. Chosen over Supabase's user-initiated email change because the applicant has no session on the signup form and the change pair of confirmation emails would not fit the passwordless flow.
 - **Refused edge:** email matches rejected profile X and number matches rejected profile Y (X ≠ Y) → refuse and point to the secretariat; reusing either would collide on the other's unique column.
 - **Test gotcha:** Supabase's magic-link cooldown lives on the auth user row, not the address — tests that send twice to one reused user must null `recovery_sent_at`/`confirmation_sent_at` between sends.
+
+## 2026-10-13 — emailed links must be redeemed on click, never on load
+
+- **Rule:** any URL we email that carries a one-time token lands on a page that does nothing until the person presses a button (form POST). Mail scanners (Outlook Safe Links, corporate gateways on custom domains) prefetch links and would otherwise consume the token first. This is why three custom-domain users bounced to /login while Gmail users were fine.
+- **No auto-submit on the interstitial** — detonation sandboxes can run JS; one real click is the price.
+- **Diagnostic fingerprint:** a practitioner receiving the *magic-link* email from the signup form means their auth user was already confirmed by something other than them.
+- **Magic-link template forwards to /set-password**, not /dashboard: the app never sends magic links deliberately, and the only case it fires is a confirmed user with no password.
+- **Seam discipline restored:** token redemption goes through `auth.verifyEmailLink` on `@/lib/auth`; the old route handler called Supabase directly.
+- **`?error=link_expired` is now visible** on /login (amber notice with "Send me a new link"); it had been emitted since July and silently dropped.

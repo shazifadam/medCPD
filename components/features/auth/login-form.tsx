@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export function LoginForm() {
+export function LoginForm({ linkExpired = false }: { linkExpired?: boolean }) {
   const [state, setState] = useState<SignInState>({ error: null });
   const [pending, startTransition] = useTransition();
 
@@ -46,6 +46,27 @@ export function LoginForm() {
         className="flex flex-col gap-5"
         noValidate
       >
+        {linkExpired && !state.error && (
+          <div
+            role="status"
+            className="flex gap-3 rounded-md border border-status-pending-border/40 bg-status-pending-bg px-4 py-3 text-sm text-status-pending"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <div className="flex flex-col gap-1">
+              <p className="font-medium">This link has expired</p>
+              <p>
+                It was already used or is no longer valid.{" "}
+                <Link
+                  href="/forgot-password"
+                  className="font-medium underline underline-offset-2 hover:text-foreground"
+                >
+                  Send me a new link
+                </Link>
+              </p>
+            </div>
+          </div>
+        )}
+
         {state.error && (
           <div
             role="alert"

@@ -2,7 +2,7 @@
 
 > Ticked as each step completes. Phase order is the agreed build sequence. `✅` phase done · `🔄` in progress · `⬜` not started.
 
-**Last updated:** 2026-09-08 (post-launch: Update 1 ✅ 2026-08-09, organizations/settings 2026-08-10, trial-run fixes 2026-09-08 — see [[Current State]])
+**Last updated:** 2026-10-13 (post-launch: Update 1 ✅ 2026-08-09, organizations/settings 2026-08-10, trial-run fixes 2026-09-08, registration rounds 2026-10-10, email-link interstitial 2026-10-13 ⏳ review — see [[Current State]])
 
 ---
 
@@ -147,6 +147,7 @@
 - [x] Trial-run fixes (2026-09-08, PR #2) — event times in Maldives time (`lib/time.ts`); signup drops specialty + workplace → editable on profile
 - [x] Registration reopen/reapply + attempt history, Medical Officer designation (2026-10-10, merged to main `7f9dd6c`)
 - [x] Signup reuses a rejected profile by email or PMR/TMR number (2026-10-10, merged to main `b22d029`)
+- [ ] Emailed one-time links redeemed on click (AU6 interstitial at /auth/confirm) + login expired-link notice + magic-link template → /set-password (2026-10-13, branch `feature/auth-link-interstitial`, awaiting localhost review + manual template update)
 - [ ] Figma AU3/PF1 frames updated to match the simplified signup / profile specialty select; add frames for /reapply, rejected gate, Reopen dialog, Application history, new profile row layout
 
 ---

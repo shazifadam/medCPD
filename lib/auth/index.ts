@@ -10,4 +10,5 @@ export type {
   Session,
   Role,
   SignUpMetadata,
+  EmailLinkType,
 } from "./types";
