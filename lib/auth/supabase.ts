@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import type { AuthProvider, AuthUser } from "./types";
+import type { AuthProvider, AuthUser, EmailLinkType } from "./types";
 
 /**
  * Supabase Auth implementation of the AuthProvider interface.
@@ -88,6 +88,16 @@ export const auth: AuthProvider = {
   async sendPasswordReset(email, redirectTo) {
     const { error } = await supabase().auth.resetPasswordForEmail(email, {
       redirectTo,
+    });
+    return { error: error?.message ?? null };
+  },
+
+  async verifyEmailLink(tokenHash: string, type: EmailLinkType) {
+    // token_hash verification: works cross-device (no PKCE verifier cookie
+    // needed). The session cookies are written by the cookie adapter above.
+    const { error } = await supabase().auth.verifyOtp({
+      type,
+      token_hash: tokenHash,
     });
     return { error: error?.message ?? null };
   },

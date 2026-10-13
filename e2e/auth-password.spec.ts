@@ -84,4 +84,67 @@ test.describe("Email-link bridges reach their handlers while signed out", () => 
     await page.goto("/auth/confirm");
     await expect(page).toHaveURL(/\/login\?error=link_expired/);
   });
+
+  test("/auth/confirm with an unknown type lands on link_expired", async ({
+    page,
+  }) => {
+    await page.goto("/auth/confirm?token_hash=abc&type=sms");
+    await expect(page).toHaveURL(/\/login\?error=link_expired/);
+  });
+});
+
+test.describe("AU6 interstitial — emailed links are redeemed on click, not on load", () => {
+  // Regression (2026-10-13): Outlook / corporate mail scanners prefetch every
+  // link in an email. Verifying on GET let the scanner burn the one-time
+  // token, so the practitioner's own click bounced to /login. The page must
+  // now render WITHOUT touching the token; only the button's POST redeems it.
+  const RESET = "/auth/confirm?token_hash=bogus-token&type=recovery&next=/set-password";
+
+  test("GET renders the confirm card and stays on /auth/confirm", async ({
+    page,
+  }) => {
+    await page.goto(RESET);
+    await expect(page).toHaveURL(/\/auth\/confirm\?/);
+    await expect(
+      page.getByRole("heading", { name: "Reset your password" })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
+    await expect(page.getByText(/can only be used once/i)).toBeVisible();
+  });
+
+  test("copy follows the link kind", async ({ page }) => {
+    await page.goto("/auth/confirm?token_hash=bogus-token&type=signup");
+    await expect(
+      page.getByRole("heading", { name: "Verify your email address" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Verify email address" })
+    ).toBeVisible();
+
+    await page.goto("/auth/confirm?token_hash=bogus-token&type=magiclink");
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Gradus" })
+    ).toBeVisible();
+  });
+
+  test("clicking with a used/invalid token lands on login with the expired notice (negative)", async ({
+    page,
+  }) => {
+    await page.goto(RESET);
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page).toHaveURL(/\/login\?error=link_expired/);
+    await expect(page.getByText("This link has expired")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Send me a new link" })
+    ).toHaveAttribute("href", "/forgot-password");
+  });
+
+  test("has no serious/critical a11y violations", async ({ page }) => {
+    await page.goto(RESET);
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((v) =>
+      ["serious", "critical"].includes(v.impact ?? "")
+    );
+    expect(serious).toEqual([]);
+  });
 });

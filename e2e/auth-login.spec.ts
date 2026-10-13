@@ -6,6 +6,25 @@ import AxeBuilder from "@axe-core/playwright";
  * Real-credential success path lands with Chunk 1.4 (local Supabase).
  */
 
+test.describe("AU1 — login, expired-link notice", () => {
+  test("?error=link_expired shows the notice with a way to a fresh link", async ({
+    page,
+  }) => {
+    await page.goto("/login?error=link_expired");
+    await expect(page.getByText("This link has expired")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Send me a new link" })
+    ).toHaveAttribute("href", "/forgot-password");
+    // The sign-in form is still usable underneath the notice
+    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  });
+
+  test("plain /login shows no expired-link notice (negative)", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByText("This link has expired")).toHaveCount(0);
+  });
+});
+
 test.describe("AU1 — login, default", () => {
   test("renders per the Figma frame", async ({ page }) => {
     await page.goto("/login");

@@ -28,6 +28,9 @@ export interface SignUpMetadata {
   mmdc_registration_type: "PMR" | "TMR";
 }
 
+/** Link kinds the branded Supabase templates emit (`type=` in the URL). */
+export type EmailLinkType = "signup" | "recovery" | "magiclink";
+
 export interface AuthProvider {
   /** Current authenticated user, or null. Server-side. */
   getUser(): Promise<AuthUser | null>;
@@ -51,6 +54,17 @@ export interface AuthProvider {
   sendPasswordReset(
     email: string,
     redirectTo: string
+  ): Promise<{ error: string | null }>;
+  /**
+   * AU6 → AU8 bridge: redeem an emailed one-time link (signup verification,
+   * password reset, magic link) and establish the session. Called from the
+   * /auth/confirm interstitial's POST — never on a bare GET, because mail
+   * scanners (Outlook Safe Links, corporate gateways) prefetch links and
+   * would burn the token before the person clicks.
+   */
+  verifyEmailLink(
+    tokenHash: string,
+    type: EmailLinkType
   ): Promise<{ error: string | null }>;
   /** AU8 — set a new password for the current (link-authenticated) session. */
   updatePassword(password: string): Promise<{ error: string | null }>;
